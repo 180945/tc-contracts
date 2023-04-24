@@ -5,15 +5,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="bf86d2e0-19de-4838-8373-750c03e40c70" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/lib/openzeppelin-contracts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/lib/openzeppelin-contracts-upgradeable" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/lib/safe-contracts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gitmodules" beforeDir="false" afterPath="$PROJECT_DIR$/.gitmodules" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/foundry.toml" beforeDir="false" afterPath="$PROJECT_DIR$/foundry.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/forge-std" beforeDir="false" afterPath="$PROJECT_DIR$/lib/forge-std" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/remappings.txt" beforeDir="false" afterPath="$PROJECT_DIR$/remappings.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/script/Counter.s.sol" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Counter.sol" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/Counter.t.sol" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/TCBridge.sol" beforeDir="false" afterPath="$PROJECT_DIR$/src/TCBridge.sol" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/test/TcBridge.t.sol" beforeDir="false" afterPath="$PROJECT_DIR$/test/TcBridge.t.sol" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -52,18 +49,24 @@
     "RunOnceActivity.OpenProjectViewOnStart": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "WebServerToolWindowFactoryState": "false",
-    "last_opened_file_path": "/Users/0xbigbang/Documents/incognito/tc-contracts-2",
+    "last_opened_file_path": "/Users/0xbigbang/Documents/incognito/tc-contracts-2/test",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
     "node.js.selected.package.tslint": "(autodetect)",
     "nodejs_package_manager_path": "npm",
     "project.structure.last.edited": "Project",
-    "project.structure.proportion": "0.0",
+    "project.structure.proportion": "0.15",
     "project.structure.side.proportion": "0.0",
+    "ts.external.directory.path": "/Applications/IntelliJ IDEA.app/Contents/plugins/javascript-impl/jsLanguageServicesImpl/external",
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/test" />
+    </key>
+  </component>
   <component name="RunManager">
     <configuration default="true" type="JetRunConfigurationType">
       <module name="tc-contracts" />
@@ -89,7 +92,7 @@
       <updated>1682300659264</updated>
       <workItem from="1682300660540" duration="5743000" />
       <workItem from="1682323300407" duration="11000" />
-      <workItem from="1682323396398" duration="2890000" />
+      <workItem from="1682323396398" duration="11827000" />
     </task>
     <servers />
   </component>
