@@ -136,6 +136,9 @@ contract TCBridgeTest is Test {
             payable(ADMIN_ADDR),
             signatures
         );
+
+        assertEq(wbtc.balanceOf(USER_1), 1e18);
+        assertEq(wbtc.balanceOf(USER_3), 10e18);
     }
 
     function testBurn() public {
