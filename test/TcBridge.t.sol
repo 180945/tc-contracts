@@ -25,6 +25,8 @@ contract TCBridgeTest is Test {
     address constant USER_2 = address(12);
     address constant USER_3 = address(13);
 
+    event Burn(WrappedToken token, address burner, uint amount, string btcAddr);
+
     function setUp() public {
         // deploy multisig wallet
         address[] memory owners = new address[](3);
@@ -139,6 +141,15 @@ contract TCBridgeTest is Test {
     function testBurn() public {
         testMint();
         // burn token
+
+        string memory btcAddr = "bc1q8ylkr8c9scej96hkdhrj96632rwu2gtf72prus";
+
+        vm.startPrank(USER_1);
+        wbtc.approve(address(tcbridge), 1e18);
+        vm.expectEmit(false, false, false, true);
+        emit Burn(wbtc, USER_1, 1e18, btcAddr);
+        tcbridge.burn(wbtc, 1e18, btcAddr);
+        vm.stopPrank();
     }
 
 }
