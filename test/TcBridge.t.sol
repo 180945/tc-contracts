@@ -97,7 +97,7 @@ contract TCBridgeTest is Test {
         tcbridge.mint(tokens, recipients, amounts);
 
         bytes memory mintCallData = abi.encodeWithSelector(
-            TCBridge.mint.selector,
+            bytes4(keccak256("mint(address[],address[],uint256[])")),
             tokens,
             recipients,
             amounts
@@ -139,6 +139,54 @@ contract TCBridgeTest is Test {
 
         assertEq(wbtc.balanceOf(USER_1), 1e18);
         assertEq(wbtc.balanceOf(USER_3), 10e18);
+
+        WrappedToken token = wbtc;
+
+        vm.expectRevert(bytes("Ownable: caller is not the owner"));
+        tcbridge.mint(token, recipients, amounts);
+
+        mintCallData = abi.encodeWithSelector(
+            bytes4(keccak256("mint(address,address[],uint256[])")),
+            token,
+            recipients,
+            amounts
+        );
+        // request mint token to USER_1 USER_3
+        encodeTx = safe.encodeTransactionData(
+            address(tcbridge),
+            0,
+            mintCallData,
+            Enum.Operation.Call,
+            0,
+            0,
+            0,
+            address(0),
+            ADMIN_ADDR,
+            safe.nonce()
+        );
+        txHash = keccak256(encodeTx);
+        (v, r, s) = vm.sign(prv2, txHash);
+        signatures = abi.encodePacked(r, s, v);
+
+        (v, r, s) = vm.sign(prv1, txHash);
+        signatures = abi.encodePacked(signatures, r, s, v);
+
+        // execute tx
+        safe.execTransaction(
+            address(tcbridge),
+            0,
+            mintCallData,
+            Enum.Operation.Call,
+            0,
+            0,
+            0,
+            address(0),
+            payable(ADMIN_ADDR),
+            signatures
+        );
+
+        assertEq(wbtc.balanceOf(USER_1), 2e18);
+        assertEq(wbtc.balanceOf(USER_3), 20e18);
     }
 
     function testBurn() public {

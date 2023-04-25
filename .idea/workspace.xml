@@ -6,9 +6,6 @@
   <component name="ChangeListManager">
     <list default="true" id="bf86d2e0-19de-4838-8373-750c03e40c70" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/foundry.toml" beforeDir="false" afterPath="$PROJECT_DIR$/foundry.toml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/forge-std" beforeDir="false" afterPath="$PROJECT_DIR$/lib/forge-std" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/remappings.txt" beforeDir="false" afterPath="$PROJECT_DIR$/remappings.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/TCBridge.sol" beforeDir="false" afterPath="$PROJECT_DIR$/src/TCBridge.sol" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/test/TcBridge.t.sol" beforeDir="false" afterPath="$PROJECT_DIR$/test/TcBridge.t.sol" afterDir="false" />
     </list>
@@ -49,7 +46,7 @@
     "RunOnceActivity.OpenProjectViewOnStart": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "WebServerToolWindowFactoryState": "false",
-    "last_opened_file_path": "/Users/0xbigbang/Documents/incognito/tc-contracts-2/test",
+    "last_opened_file_path": "/Users/0xbigbang/Documents/incognito/tc-contracts-2/script",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
@@ -64,6 +61,7 @@
 }]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/script" />
       <recent name="$PROJECT_DIR$/test" />
     </key>
   </component>
@@ -92,7 +90,7 @@
       <updated>1682300659264</updated>
       <workItem from="1682300660540" duration="5743000" />
       <workItem from="1682323300407" duration="11000" />
-      <workItem from="1682323396398" duration="11827000" />
+      <workItem from="1682323396398" duration="24195000" />
     </task>
     <servers />
   </component>

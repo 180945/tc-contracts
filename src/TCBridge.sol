@@ -8,6 +8,7 @@ contract TCBridge is OwnableUpgradeable {
 
     // events
     event Mint(WrappedToken[] tokens, address[] recipients, uint[] amounts);
+    event Mint(WrappedToken token, address[] recipients, uint[] amounts);
     event Burn(WrappedToken token, address burner, uint amount, string btcAddr);
 
     function initialize(address validator) external initializer {
@@ -23,6 +24,16 @@ contract TCBridge is OwnableUpgradeable {
         }
 
         emit Mint(tokens, recipients, amounts);
+    }
+
+    function mint(WrappedToken token, address[] calldata recipients, uint[] calldata amounts) external onlyOwner {
+        require(recipients.length == amounts.length, "TCB: invalid input data");
+
+        for (uint i = 0; i < recipients.length; i++) {
+            token.mint(recipients[i], amounts[i]);
+        }
+
+        emit Mint(token, recipients, amounts);
     }
 
     function burn(WrappedToken token, uint amount, string calldata externalAddr) external {
