@@ -6,8 +6,9 @@ import "@openzeppelin-upgradeable/contracts/token/ERC20/extensions/ERC20Burnable
 
 contract WrappedToken is OwnableUpgradeable, ERC20BurnableUpgradeable {
 
-    function initialize(address bridgeContract) external initializer {
+    function initialize(address bridgeContract, string calldata name, string calldata symbol) external initializer {
         _transferOwnership(bridgeContract);
+        __ERC20_init(name, symbol);
     }
 
     function mint(address account, uint amount) external onlyOwner {

@@ -61,8 +61,10 @@ contract TCScript is Script {
             address(wbrcImpl),
             upgradeAddress,
             abi.encodeWithSelector(
-                TCBridge.initialize.selector,
-                address(tcbridge)
+                WrappedToken.initialize.selector,
+                address(tcbridge),
+                "Wrapped BTC",
+                "WBTC"
             )
         )));
 

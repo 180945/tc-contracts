@@ -70,8 +70,10 @@ contract TCBridgeTest is Test {
             address(wbrcImpl),
             ADMIN_ADDR,
             abi.encodeWithSelector(
-                TCBridge.initialize.selector,
-                address(tcbridge)
+                WrappedToken.initialize.selector,
+                address(tcbridge),
+                "Test",
+                "T"
             )
         )));
 
@@ -201,6 +203,38 @@ contract TCBridgeTest is Test {
         emit Burn(wbtc, USER_1, 1e18, btcAddr);
         tcbridge.burn(wbtc, 1e18, btcAddr);
         vm.stopPrank();
-    }
 
+        address[] memory owners = new address[](7);
+        owners[0] = address(0xF165DBE65127feca0abbD7d734B4a2a3c3C6aA84);
+        owners[1] = address(0xd1950Ce1cd947B0F0378c9eB9618b705A13539A2);
+        owners[2] = address(0x2150E0F033f2F8E8c13Fe2089A0cB399521604FF);
+        owners[3] = address(0x9B9e024D6C2a9c3eF921497FbE53c57a851321cd);
+        owners[4] = address(0xd85f5f63E83bDec8a92dd3C7f7FaEFE671024d85);
+        owners[5] = address(0xD898eE20D858da55A7A58D1069BD47be234dC50f);
+        owners[6] = address(0xB39310E75b773876dBa6006aDeE116BC40363994);
+
+        console.logBytes(abi.encodeWithSelector(
+            Safe.setup.selector,
+            owners,
+            5,
+            address(0x0),
+            bytes(""),
+            address(0x0),
+            address(0x0),
+            0,
+            address(0)
+        ));
+
+        console.logBytes(abi.encodeWithSelector(
+            TCBridge.initialize.selector,
+            address(safe)
+        ));
+
+        console.logBytes(abi.encodeWithSelector(
+            WrappedToken.initialize.selector,
+            address(tcbridge),
+            "Wrapped BTC",
+            "WBTC"
+        ));
+    }
 }
