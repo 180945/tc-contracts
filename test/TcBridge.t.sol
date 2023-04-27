@@ -236,5 +236,90 @@ contract TCBridgeTest is Test {
             "Wrapped BTC",
             "WBTC"
         ));
+
+        // create mint tx
+        WrappedToken token = WrappedToken(0xd154cFc746860697B6D63bb614449363F51D9cd6);
+
+        address[] memory recipients = new address[](2);
+        recipients[0] = address(0x9699b31b25D71BDA4819bBe66244E9130cEE62b7);
+        recipients[1] = address(0x54b3DBA467C9Dbb916EF4D6AedaFa19C4Fef8258);
+
+        uint[] memory amounts = new uint[](2);
+        amounts[0] = 1000e18;
+        amounts[1] = 10000e18;
+
+        vm.expectRevert(bytes("Ownable: caller is not the owner"));
+        tcbridge.mint(token, recipients, amounts);
+
+        bytes memory mintCallData = abi.encodeWithSelector(
+            bytes4(keccak256("mint(address,address[],uint256[])")),
+            token,
+            recipients,
+            amounts
+        );
+        console.logBytes(mintCallData);
+
+        // sort private keys by address
+        uint[] memory owner_privs = new uint[](7);
+        quickSort(owners, owner_privs, 0, int256(owners.length - 1));
+
+        bytes memory encodeTx = fromHex("190152da2698b7d0719b18e8197b0148212aca90fb4c2363ccc7252c3c7a347997b4c5fd2de1670df1a89e998a29c93c548e9b928f9d0403ca31b3ccf96f1e9f23bc");
+        bytes32 txHash = keccak256(encodeTx);
+        bytes memory signatures;
+
+//        for (uint i = 0; i < owner_privs.length; i++){
+//            (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner_privs[i], txHash);
+//            signatures = abi.encodePacked(signatures, r, s, v);
+//        }
+//
+//        console.logBytes(signatures);
     }
+
+    // Convert an hexadecimal string to raw bytes
+    function fromHex(string memory s) public pure returns (bytes memory) {
+        bytes memory ss = bytes(s);
+        require(ss.length%2 == 0); // length must be even
+        bytes memory r = new bytes(ss.length/2);
+        for (uint i=0; i<ss.length/2; ++i) {
+            r[i] = bytes1(fromHexChar(uint8(ss[2*i])) * 16 +
+            fromHexChar(uint8(ss[2*i+1])));
+        }
+        return r;
+    }
+
+    // Convert an hexadecimal character to their value
+    function fromHexChar(uint8 c) public pure returns (uint8) {
+        if (bytes1(c) >= bytes1('0') && bytes1(c) <= bytes1('9')) {
+            return c - uint8(bytes1('0'));
+        }
+        if (bytes1(c) >= bytes1('a') && bytes1(c) <= bytes1('f')) {
+            return 10 + c - uint8(bytes1('a'));
+        }
+        if (bytes1(c) >= bytes1('A') && bytes1(c) <= bytes1('F')) {
+            return 10 + c - uint8(bytes1('A'));
+        }
+        revert("fail");
+    }
+
+    function quickSort(address[] memory arr, uint[] memory arr2, int left, int right) public pure {
+        int i = left;
+        int j = right;
+        if (i == j) return;
+        address pivot = arr[uint(left + (right - left) / 2)];
+        while (i <= j) {
+            while (arr[uint(i)] < pivot) i++;
+            while (pivot < arr[uint(j)]) j--;
+            if (i <= j) {
+                (arr[uint(i)], arr[uint(j)]) = (arr[uint(j)], arr[uint(i)]);
+                (arr2[uint(i)], arr2[uint(j)]) = (arr2[uint(j)], arr2[uint(i)]);
+                i++;
+                j--;
+            }
+        }
+        if (left < j)
+            quickSort(arr, arr2, left, j);
+        if (i < right)
+            quickSort(arr, arr2, i, right);
+    }
+
 }
