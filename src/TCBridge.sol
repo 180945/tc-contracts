@@ -11,8 +11,8 @@ contract TCBridge is OwnableUpgradeable {
     event Mint(WrappedToken token, address[] recipients, uint[] amounts);
     event Burn(WrappedToken token, address burner, uint amount, string btcAddr);
 
-    function initialize(address validator) external initializer {
-        _transferOwnership(validator);
+    function initialize(address safeMultisigContractAddress) external initializer {
+        _transferOwnership(safeMultisigContractAddress);
     }
 
     // mint
