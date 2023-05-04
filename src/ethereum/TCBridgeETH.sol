@@ -5,6 +5,8 @@ import "@openzeppelin-upgradeable/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract TCBridgeETH is OwnableUpgradeable {
+    using SafeERC20 for IERC20;
+
     IERC20 constant public ETH_TOKEN = IERC20(0x0000000000000000000000000000000000000000);
 
     // events
@@ -42,7 +44,7 @@ contract TCBridgeETH is OwnableUpgradeable {
     }
 
     function deposit(IERC20 token, uint amount, address externalAddr) external {
-        SafeERC20.safeTransferFrom(token, _msgSender(), address(this), amount);
+        token.safeTransferFrom(_msgSender(), address(this), amount);
 
         emit Deposit(token, _msgSender(), amount, externalAddr);
     }
@@ -52,7 +54,7 @@ contract TCBridgeETH is OwnableUpgradeable {
             (bool success, ) = recipient.call{value: amount}("");
             require(success, "TCB: transfer eth failed");
         } else {
-            SafeERC20.safeTransfer(token, recipient, amount);
+            token.safeTransfer(recipient, amount);
         }
     }
 }

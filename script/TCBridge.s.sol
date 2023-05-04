@@ -58,7 +58,7 @@ contract TCScript is Script {
 
         // deploy wrapped token
         WrappedToken wbrcImpl = new WrappedToken();
-        WrappedToken wbtc = WrappedToken(address(new TransparentUpgradeableProxy(
+        WrappedToken(address(new TransparentUpgradeableProxy(
             address(wbrcImpl),
             upgradeAddress,
             abi.encodeWithSelector(
@@ -111,7 +111,7 @@ contract TCETHScript is Script {
 
         // deploy tcbridge
         TCBridgeETH tcImpl = new TCBridgeETH();
-        TCBridgeETH tcbridge = TCBridgeETH(address(new TransparentUpgradeableProxy(
+        TCBridgeETH(address(new TransparentUpgradeableProxy(
             address(tcImpl),
             upgradeAddress,
             abi.encodeWithSelector(
