@@ -6,6 +6,7 @@ import "../src/WToken.sol";
 import "../src/TCBridge.sol";
 import "@safe-contracts/contracts/Safe.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import "../src/ethereum/TCBridgeETH.sol";
 
 contract TCBridgeTest is Test {
     address public constant ADMIN_ADDR = address(10);
@@ -26,6 +27,10 @@ contract TCBridgeTest is Test {
     address constant USER_3 = address(13);
 
     event Burn(WrappedToken token, address burner, uint amount, string btcAddr);
+    // events
+    event Withdraw(IERC20[] tokens, address[] recipients, uint[] amounts);
+    event Withdraw(IERC20 token, address[] recipients, uint[] amounts);
+    event Deposit(IERC20 token, address sender, uint amount, address recipient);
 
     function setUp() public {
         // deploy multisig wallet
@@ -271,8 +276,71 @@ contract TCBridgeTest is Test {
 //            (uint8 v, bytes32 r, bytes32 s) = vm.sign(owner_privs[i], txHash);
 //            signatures = abi.encodePacked(signatures, r, s, v);
 //        }
-//
-//        console.logBytes(signatures);
+
+        console.logBytes(signatures);
+    }
+
+    function testTCBridgeETH() public {
+        TCBridgeETH beth = TCBridgeETH(address(new TransparentUpgradeableProxy(
+            address(new TCBridgeETH()),
+            ADMIN_ADDR,
+            abi.encodeWithSelector(
+                TCBridgeETH.initialize.selector,
+                USER_3
+            )
+        )));
+
+        assertEq(beth.owner(), USER_3);
+
+        vm.deal(USER_1, 5 * 1e18);
+        vm.deal(USER_2, 5 * 1e18);
+
+        // test deposit
+        vm.startPrank(USER_1);
+        vm.expectEmit(false, false, false, true);
+        emit Deposit(beth.ETH_TOKEN(), USER_1, 0, USER_1);
+        beth.deposit(USER_1);
+
+        emit Deposit(beth.ETH_TOKEN(), USER_1, 1e18, USER_1);
+        beth.deposit{value: 1e18}(USER_1);
+
+        WrappedToken test = new WrappedToken();
+        test.initialize(USER_1, "", "");
+        test.mint(USER_1, 1e18);
+        test.approve(address(beth), 1e18);
+
+        vm.expectEmit(false, false, false, true);
+        emit Deposit(IERC20(address(test)), USER_1, 1e18, USER_1);
+        beth.deposit(IERC20(address(test)), 1e18, USER_1);
+        vm.stopPrank();
+
+        assertEq(test.balanceOf(USER_1), 0);
+
+        // test withdraw
+        address[] memory recipients = new address[](2);
+        recipients[0] = address(0x9699b31b25D71BDA4819bBe66244E9130cEE62b7);
+        recipients[1] = address(0x54b3DBA467C9Dbb916EF4D6AedaFa19C4Fef8258);
+
+        uint[] memory amounts = new uint[](2);
+        amounts[0] = 5e17;
+        amounts[1] = 5e17;
+
+        vm.startPrank(USER_3);
+        emit Withdraw(beth.ETH_TOKEN(), recipients, amounts);
+        beth.withdraw(beth.ETH_TOKEN(), recipients, amounts);
+
+        assertEq(address(0x9699b31b25D71BDA4819bBe66244E9130cEE62b7).balance, amounts[0]);
+
+        emit Withdraw(IERC20(address(test)), recipients, amounts);
+        beth.withdraw(IERC20(address(test)), recipients, amounts);
+        vm.stopPrank();
+
+        assertEq(test.balanceOf(0x9699b31b25D71BDA4819bBe66244E9130cEE62b7), 5e17);
+
+        vm.prank(USER_2);
+        IERC20 eth = beth.ETH_TOKEN();
+        vm.expectRevert(bytes("Ownable: caller is not the owner"));
+        beth.withdraw(eth, recipients, amounts);
     }
 
     // Convert an hexadecimal string to raw bytes
