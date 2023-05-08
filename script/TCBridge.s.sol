@@ -132,3 +132,45 @@ contract TCETHScript is Script {
         vm.stopBroadcast();
     }
 }
+
+contract TCDeployTokenScript is Script {
+    address upgradeAddress;
+    address wrappedTokenImp;
+    address tcBridge;
+
+    function setUp() public {
+        upgradeAddress = 0xE7143319283D0b5b234AEA046769D40bee5C6D43;
+        wrappedTokenImp = 0x79DD392A7c352f0C47fB452c036EF08A1DA148C6;
+        tcBridge = 0x63bfaC4D88aeD85E0A0880E501Ed4B9E1D64A47b;
+    }
+
+    function run() public {
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        vm.startBroadcast(deployerPrivateKey);
+
+        // deploy wrapped token
+        WrappedToken(address(new TransparentUpgradeableProxy(
+            wrappedTokenImp,
+            upgradeAddress,
+            abi.encodeWithSelector(
+                WrappedToken.initialize.selector,
+                tcBridge,
+                "Wrapped PEPE",
+                "WPEPE"
+            )
+        )));
+
+        WrappedToken(address(new TransparentUpgradeableProxy(
+            wrappedTokenImp,
+            upgradeAddress,
+            abi.encodeWithSelector(
+                WrappedToken.initialize.selector,
+                tcBridge,
+                "Wrapped TURBO",
+                "WTURBO"
+            )
+        )));
+
+        vm.stopBroadcast();
+    }
+}
