@@ -269,7 +269,7 @@ contract TCBridgeTest is Test {
         quickSort(owners, owner_privs, 0, int256(owners.length - 1));
 
         bytes memory encodeTx = fromHex("190152da2698b7d0719b18e8197b0148212aca90fb4c2363ccc7252c3c7a347997b4c5fd2de1670df1a89e998a29c93c548e9b928f9d0403ca31b3ccf96f1e9f23bc");
-        bytes32 txHash = keccak256(encodeTx);
+        keccak256(encodeTx);
         bytes memory signatures;
 
 //        for (uint i = 0; i < owner_privs.length; i++){

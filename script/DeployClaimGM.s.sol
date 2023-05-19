@@ -2,8 +2,8 @@
 pragma solidity ^0.8.13;
 
 import "forge-std/Script.sol";
-import "../src/swapGM/swapGM.sol";
-import "../src/swapGM/deployMultiSwap.sol";
+import "../src/swapGM/claimGM.sol";
+import "../src/swapGM/deployMultiClaim.sol";
 
 contract SwapScript is Script {
 
@@ -55,14 +55,9 @@ contract SwapScript is Script {
 
         // deploy vesting tc contract
         console.log("=== Deployment addresses ===");
-//        for (uint i = 0; i < owners.length; i++) {
-//            swapGM sgm = new swapGM(owners[i]);
-//            console.log("New swap contract  %s", address(sgm));
-//            console.log("Owner  %s", sgm.owner());
-//        }
-        deployMultiSwap dpGMM = new deployMultiSwap();
+        deployMultiClaim dpGMM = new deployMultiClaim();
         dpGMM.deploySwap(owners);
-        console.log("New deploy multi swap contract  %s", address(dpGMM));
+        console.log("New deploy multi claim contract  %s", address(dpGMM));
 
         vm.stopBroadcast();
     }
