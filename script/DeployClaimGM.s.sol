@@ -5,7 +5,7 @@ import "forge-std/Script.sol";
 import "../src/swapGM/claimGM.sol";
 import "../src/swapGM/deployMultiClaim.sol";
 
-contract SwapScript is Script {
+contract ClaimScript is Script {
 
     function setUp() public { }
 
@@ -56,7 +56,7 @@ contract SwapScript is Script {
         // deploy vesting tc contract
         console.log("=== Deployment addresses ===");
         deployMultiClaim dpGMM = new deployMultiClaim();
-        dpGMM.deploySwap(owners);
+        dpGMM.deployClaim(owners);
         console.log("New deploy multi claim contract  %s", address(dpGMM));
 
         vm.stopBroadcast();
