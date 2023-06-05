@@ -11,8 +11,14 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract TCScript is Script {
     address upgradeAddress;
+    address wrappedTokenImp;
+    address safeImp;
+    address tcbridgeImp;
     function setUp() public {
         upgradeAddress = 0xE7143319283D0b5b234AEA046769D40bee5C6D43;
+        wrappedTokenImp = 0x79DD392A7c352f0C47fB452c036EF08A1DA148C6;
+        safeImp = 0x47D453f4E494Ebb7264380d98D1C61420DfBB973;
+        tcbridgeImp = 0xa103f20367b18D004710141Ff505A6B63CE6885C;
     }
 
     function run() public {
@@ -29,9 +35,8 @@ contract TCScript is Script {
         owners[5] = address(0xe64F53d154A25498870202aceff40A4344385a18);
         owners[6] = address(0x7d32913ad31Cdd2DAfA4eB024eF8fa0A3E6F9D95);
 
-        Safe impl = new Safe();
         Safe safe = Safe(payable(address(new TransparentUpgradeableProxy(
-            address(impl),
+            safeImp,
             upgradeAddress,
             abi.encodeWithSelector(
                 Safe.setup.selector,
@@ -47,9 +52,8 @@ contract TCScript is Script {
         ))));
 
         // deploy tcbridge
-        TCBridge tcImpl = new TCBridge();
-        TCBridge tcbridge = TCBridge(address(new TransparentUpgradeableProxy(
-            address(tcImpl),
+        TCBridge tcBridge = TCBridge(address(new TransparentUpgradeableProxy(
+            tcbridgeImp,
             upgradeAddress,
             abi.encodeWithSelector(
                 TCBridge.initialize.selector,
@@ -58,18 +62,46 @@ contract TCScript is Script {
         )));
 
         // deploy wrapped token
-        WrappedToken wbrcImpl = new WrappedToken();
-        WrappedToken(address(new TransparentUpgradeableProxy(
-            address(wbrcImpl),
+        WrappedToken oxbt = WrappedToken(address(new TransparentUpgradeableProxy(
+            wrappedTokenImp,
             upgradeAddress,
             abi.encodeWithSelector(
                 WrappedToken.initialize.selector,
-                address(tcbridge),
-                "Wrapped BTC",
-                "WBTC"
+                tcBridge,
+                "OXBT",
+                "OXBT"
+            )
+        )));
+
+        WrappedToken ore = WrappedToken(address(new TransparentUpgradeableProxy(
+            wrappedTokenImp,
+            upgradeAddress,
+            abi.encodeWithSelector(
+                WrappedToken.initialize.selector,
+                tcBridge,
+                "ORE",
+                "ORE"
+            )
+        )));
+
+        WrappedToken ordi = WrappedToken(address(new TransparentUpgradeableProxy(
+            wrappedTokenImp,
+            upgradeAddress,
+            abi.encodeWithSelector(
+                WrappedToken.initialize.selector,
+                tcBridge,
+                "ORDI",
+                "ORDI"
             )
         )));
         vm.stopBroadcast();
+
+        console.log("=== Deployment addresses ===");
+        console.log("Safe address %s", address(safe));
+        console.log("TCBridge address  %s", address(tcBridge));
+        console.log("OXBT address  %s", address(oxbt));
+        console.log("ORE address  %s", address(ore));
+        console.log("ORDI address  %s", address(ordi));
     }
 }
 
