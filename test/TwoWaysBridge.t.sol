@@ -341,12 +341,15 @@ contract TCBridgeTest is Test {
 
         // test withdraw and deposit
         address[] memory tokens = new address[](2);
-        tokens[0] = address(wbtc);
+        tokens[0] = address(testToken);
         tokens[1] = address(0);
 
+        // new proxy
+        ProxyBridge newProxy = new ProxyBridge(address(safe), address(bridge));
+
         address[] memory recipients = new address[](2);
-        recipients[0] = USER_1;
-        recipients[1] = USER_3;
+        recipients[0] = address(newProxy);
+        recipients[1] = address(newProxy);
 
         uint[] memory amounts = new uint[](2);
         amounts[0] = 1e18;
@@ -360,7 +363,7 @@ contract TCBridgeTest is Test {
         );
 
         bytes memory encodeTx = safe.encodeTransactionData(
-            address(bridge),
+            address(beth),
             0,
             withdrawCallData,
             Enum.Operation.Call,
@@ -381,7 +384,7 @@ contract TCBridgeTest is Test {
 
         withdrawCallData = abi.encodeWithSelector(
             Safe.execTransaction.selector,
-            address(bridge),
+            address(beth),
             0,
             withdrawCallData,
             Enum.Operation.Call,
@@ -397,8 +400,7 @@ contract TCBridgeTest is Test {
         recipients2[0] = "test";
         recipients2[1] = "test2";
 
-        // new proxy
-        ProxyBridge newProxy = new ProxyBridge(address(safe), address(bridge));
+        // execute bridge
         newProxy.bridgeL1ToL2(withdrawCallData, tokens, amounts, recipients2);
     }
 }
