@@ -9,11 +9,11 @@ interface BridgeL2 {
 
 contract ProxyBridge {
     address constant public ETH_TOKEN = 0x0000000000000000000000000000000000000000;
-    address immutable bridgeL1;
+    address immutable  safeL1;
     BridgeL2 immutable bridgeL2;
 
-    constructor(address bridgeL1_, address bridgeL2_) {
-        bridgeL1 = bridgeL1_;
+    constructor(address safeL1_, address bridgeL2_) {
+        safeL1 = safeL1_;
         bridgeL2 = BridgeL2(bridgeL2_);
     }
 
@@ -27,7 +27,7 @@ contract ProxyBridge {
         require(tokens.length == amounts.length && recipients.length == amounts.length, "Bridge: invalid input data");
 
         // process withdraw from L1
-        (bool success, ) = bridgeL1.call(bridge1Data);
+        (bool success, ) = safeL1.call(bridge1Data);
         require(success, "Bridge: L1 executed failed");
 
         // process L2 data
