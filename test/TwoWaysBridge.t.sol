@@ -400,7 +400,12 @@ contract TCBridgeTest is Test {
         recipients2[0] = "test";
         recipients2[1] = "test2";
 
+        assertEq(address(beth).balance, 1e18);
+        assertEq(address(bridge).balance, 0);
         // execute bridge
         newProxy.bridgeL1ToL2(withdrawCallData, tokens, amounts, recipients2);
+        // check balance
+        assertEq(address(bridge).balance, 1e18);
+        assertEq(address(beth).balance, 0);
     }
 }
