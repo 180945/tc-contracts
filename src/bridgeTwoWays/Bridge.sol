@@ -50,14 +50,19 @@ contract Bridge is OwnableUpgradeable {
         emit Mint(token, recipients, amounts);
     }
 
-    function bridgeToken(WrappedToken token, uint amount, string calldata externalAddr) external {
-        if (token.isOwner(address(this))) {
-            token.burnFrom(_msgSender(), amount);
-        } else {
-            IERC20(address(token)).safeTransferFrom(_msgSender(), address(this), amount);
+    function bridgeToken(address token, uint amount, string calldata externalAddr) external {
+        (bool success, ) = token.call(
+            abi.encodeWithSelector(
+                ERC20BurnableUpgradeable.burnFrom.selector,
+                _msgSender(),
+                amount
+            )
+        );
+        if (!success) {
+            IERC20(token).safeTransferFrom(_msgSender(), address(this), amount);
         }
 
-        emit BridgeToken(token, _msgSender(), amount, externalAddr);
+        emit BridgeToken(WrappedToken(token), _msgSender(), amount, externalAddr);
     }
 
     function bridgeToken(string calldata externalAddr) payable external {
