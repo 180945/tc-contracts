@@ -15,6 +15,7 @@ contract TCBridgeTest is Test {
     WrappedToken public wbtc;
     Bridge public bridge;
     Safe public safe;
+    uint private chainIdEth = 1;
     address public o1 = address(0x9699b31b25D71BDA4819bBe66244E9130cEE62b7);
     uint256 public prv1 = uint256(0x1193a43543fc11e37daa1a026ae8fae69d84c5dd1f3f933047ff2588778c5cca);
 
@@ -40,6 +41,7 @@ contract TCBridgeTest is Test {
         owners[1] = o2;
         owners[2] = o3;
 
+        vm.chainId(1);
         Safe impl = new Safe();
         safe = Safe(payable(address(new TransparentUpgradeableProxy(
             address(impl),
@@ -64,7 +66,8 @@ contract TCBridgeTest is Test {
             ADMIN_ADDR,
             abi.encodeWithSelector(
                 Bridge.initialize.selector,
-                address(safe)
+                address(safe),
+                chainIdEth // eth
             )
         )));
 
@@ -233,11 +236,6 @@ contract TCBridgeTest is Test {
         assertEq(newToken.balanceOf(address(bridge)), 1e18);
 
         vm.expectEmit(false, false, false, true);
-        emit BridgeToken(wbtc, USER_1, 1e16, sampleAddress);
-        bridge.bridgeToken(address(wbtc), 1e16, sampleAddress);
-        assertEq(wbtc.balanceOf(address(bridge)), 0);
-
-        vm.expectEmit(false, false, false, true);
         emit BridgeToken(newToken2, USER_1, 1e18, sampleAddress);
         bridge.bridgeToken(address(newToken2), 1e18, sampleAddress);
         assertEq(newToken2.balanceOf(address(bridge)), 1e18);
@@ -345,7 +343,7 @@ contract TCBridgeTest is Test {
         tokens[1] = address(0);
 
         // new proxy
-        ProxyBridge newProxy = new ProxyBridge(address(safe), address(bridge));
+        ProxyBridge newProxy = new ProxyBridge(address(safe), address(beth), address(safe), address(bridge));
 
         address[] memory recipients = new address[](2);
         recipients[0] = address(newProxy);

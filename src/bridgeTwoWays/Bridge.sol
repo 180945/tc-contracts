@@ -11,14 +11,16 @@ contract Bridge is OwnableUpgradeable {
     using CheckOwner for WrappedToken;
 
     IERC20 constant public ETH_TOKEN = IERC20(0x0000000000000000000000000000000000000000);
+    uint CHAIN_ID_ETH;
 
     // events
     event Mint(WrappedToken[] tokens, address[] recipients, uint[] amounts);
     event Mint(WrappedToken token, address[] recipients, uint[] amounts);
     event BridgeToken(WrappedToken token, address burner, uint amount, string btcAddr);
 
-    function initialize(address safeMultisigContractAddress) external initializer {
+    function initialize(address safeMultisigContractAddress, uint chainIdEth_) external initializer {
         _transferOwnership(safeMultisigContractAddress);
+        CHAIN_ID_ETH = chainIdEth_;
     }
 
     // mint
@@ -50,17 +52,21 @@ contract Bridge is OwnableUpgradeable {
         emit Mint(token, recipients, amounts);
     }
 
-    function bridgeToken(address token, uint amount, string calldata externalAddr) external {
-        (bool success, ) = token.call(
-            abi.encodeWithSelector(
-                ERC20BurnableUpgradeable.burnFrom.selector,
-                _msgSender(),
-                amount
-            )
-        );
-        if (!success) {
-            IERC20(token).safeTransferFrom(_msgSender(), address(this), amount);
+    function _bridgeToken(address token, uint amount) internal {
+        uint chainId;
+        assembly {
+            chainId := chainid()
         }
+
+        if (chainId == CHAIN_ID_ETH) {
+            IERC20(token).safeTransferFrom(_msgSender(), address(this), amount);
+        } else {
+            WrappedToken(token).burnFrom(_msgSender(), amount);
+        }
+    }
+
+    function bridgeToken(address token, uint amount, string calldata externalAddr) external {
+        _bridgeToken(token, amount);
 
         emit BridgeToken(WrappedToken(token), _msgSender(), amount, externalAddr);
     }
