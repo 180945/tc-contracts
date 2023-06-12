@@ -16,24 +16,27 @@ contract TCScript is Script {
     address tcbridgeImp;
     function setUp() public {
         upgradeAddress = 0xE7143319283D0b5b234AEA046769D40bee5C6D43;
-        wrappedTokenImp = 0x79DD392A7c352f0C47fB452c036EF08A1DA148C6;
-        safeImp = 0x47D453f4E494Ebb7264380d98D1C61420DfBB973;
-        tcbridgeImp = 0xa103f20367b18D004710141Ff505A6B63CE6885C;
+//        wrappedTokenImp = 0x79DD392A7c352f0C47fB452c036EF08A1DA148C6;
+//        safeImp = 0x47D453f4E494Ebb7264380d98D1C61420DfBB973;
+//        tcbridgeImp = 0xa103f20367b18D004710141Ff505A6B63CE6885C;
     }
 
     function run() public {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
+        safeImp = address(new Safe());
+        tcbridgeImp = address(new TCBridge());
+        wrappedTokenImp = address(new WrappedToken());
 
         // deploy bridge tc contract
         address[] memory owners = new address[](7);
-        owners[0] = address(0x142d09aCeA7b067639c8Dc4CF55fe907c5706c80);
-        owners[1] = address(0x48519f5d37d4acE18011b5470EaaFDAf400079Cb);
-        owners[2] = address(0x6c4ABD94C6eF3A8B092a673bE7D069F6A3a0c764);
-        owners[3] = address(0xa32D154D0824C4d898b5A3b054E4aa0346322724);
-        owners[4] = address(0x2550f37641FFB5e4928052aDDD788Cd8514d16a7);
-        owners[5] = address(0xe64F53d154A25498870202aceff40A4344385a18);
-        owners[6] = address(0x7d32913ad31Cdd2DAfA4eB024eF8fa0A3E6F9D95);
+        owners[0] = address(0x990F4bAb2EEE01E74A5D180120eFA5267D17FC67);
+        owners[1] = address(0xCe91d43217b95cdB0974a40FAe776E80Db3A7cdd);
+        owners[2] = address(0x66bfb1A5EAbf746f5faC5A24E35C5fAa28A881A7);
+        owners[3] = address(0x11FF5A145EDAE91C9a6ea8E1E0740F1A71a8b72B);
+        owners[4] = address(0x93Fc71ebb6ECFaB8681769b205202894935BB2be);
+        owners[5] = address(0xBa8b1B1E0DB0A771C6A513662b2B3F75FBa39D47);
+        owners[6] = address(0xA2FFf21B05827406010A49e621632e31Ff349009);
 
         Safe safe = Safe(payable(address(new TransparentUpgradeableProxy(
             safeImp,
@@ -68,8 +71,8 @@ contract TCScript is Script {
             abi.encodeWithSelector(
                 WrappedToken.initialize.selector,
                 tcBridge,
-                "OXBT",
-                "OXBT"
+                "ETH",
+                "ETH"
             )
         )));
 
@@ -79,8 +82,8 @@ contract TCScript is Script {
             abi.encodeWithSelector(
                 WrappedToken.initialize.selector,
                 tcBridge,
-                "ORE",
-                "ORE"
+                "BTC",
+                "BTC"
             )
         )));
 
@@ -90,8 +93,8 @@ contract TCScript is Script {
             abi.encodeWithSelector(
                 WrappedToken.initialize.selector,
                 tcBridge,
-                "ORDI",
-                "ORDI"
+                "USDC",
+                "USDC"
             )
         )));
         vm.stopBroadcast();
@@ -99,9 +102,9 @@ contract TCScript is Script {
         console.log("=== Deployment addresses ===");
         console.log("Safe address %s", address(safe));
         console.log("TCBridge address  %s", address(tcBridge));
-        console.log("OXBT address  %s", address(oxbt));
-        console.log("ORE address  %s", address(ore));
-        console.log("ORDI address  %s", address(ordi));
+        console.log("ETH address  %s", address(oxbt));
+        console.log("BTC address  %s", address(ore));
+        console.log("USDC address  %s", address(ordi));
     }
 }
 
@@ -127,13 +130,13 @@ contract TCETHScript is Script {
 
         // deploy bridge tc contract
         address[] memory owners = new address[](7);
-        owners[0] = address(0x142d09aCeA7b067639c8Dc4CF55fe907c5706c80);
-        owners[1] = address(0x48519f5d37d4acE18011b5470EaaFDAf400079Cb);
-        owners[2] = address(0x6c4ABD94C6eF3A8B092a673bE7D069F6A3a0c764);
-        owners[3] = address(0xa32D154D0824C4d898b5A3b054E4aa0346322724);
-        owners[4] = address(0x2550f37641FFB5e4928052aDDD788Cd8514d16a7);
-        owners[5] = address(0xe64F53d154A25498870202aceff40A4344385a18);
-        owners[6] = address(0x7d32913ad31Cdd2DAfA4eB024eF8fa0A3E6F9D95);
+        owners[0] = address(0x990F4bAb2EEE01E74A5D180120eFA5267D17FC67);
+        owners[1] = address(0xCe91d43217b95cdB0974a40FAe776E80Db3A7cdd);
+        owners[2] = address(0x66bfb1A5EAbf746f5faC5A24E35C5fAa28A881A7);
+        owners[3] = address(0x11FF5A145EDAE91C9a6ea8E1E0740F1A71a8b72B);
+        owners[4] = address(0x93Fc71ebb6ECFaB8681769b205202894935BB2be);
+        owners[5] = address(0xBa8b1B1E0DB0A771C6A513662b2B3F75FBa39D47);
+        owners[6] = address(0xA2FFf21B05827406010A49e621632e31Ff349009);
 
         Safe safe = Safe(payable(address(new TransparentUpgradeableProxy(
             address(0xd9Db270c1B5E3Bd161E8c8503c55cEABeE709552),

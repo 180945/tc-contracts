@@ -171,8 +171,8 @@ contract TCScriptOnETH is Script {
 
         // deploy proxy
         ProxyBridge proxyBridge = new ProxyBridge(
-            0x330eFf2b5E5A02Dc8f63ac24637807f2c5737E5F,
-            0xc60886596E7FaA7A14F05B2Eac94601d943206b9,
+            0x182d6B766bD3Fe95B51b73cB1f9aD70b94F66E89,
+            0xc2542C42596A8C8aD3e3ed737858F58211745Dd4,
             address(safe),
             address(bridge),
             42069
