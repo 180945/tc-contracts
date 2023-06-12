@@ -32,7 +32,7 @@ contract TCBridgeTest is Test {
     // events
     event Mint(WrappedToken[] tokens, address[] recipients, uint[] amounts);
     event Mint(WrappedToken token, address[] recipients, uint[] amounts);
-    event BridgeToken(WrappedToken token, address burner, uint amount, string btcAddr);
+    event BridgeToken(WrappedToken token, address burner, uint amount, string extddr, uint destChainId);
 
     function setUp() public {
         // deploy multisig wallet
@@ -231,20 +231,20 @@ contract TCBridgeTest is Test {
         newToken2.approve(address(bridge), 1e30);
 
         vm.expectEmit(false, false, false, true);
-        emit BridgeToken(newToken, USER_1, 1e18, sampleAddress);
-        bridge.bridgeToken(address(newToken), 1e18, sampleAddress);
+        emit BridgeToken(newToken, USER_1, 1e18, sampleAddress, 3);
+        bridge.bridgeToken(address(newToken), 1e18, sampleAddress, 3);
         assertEq(newToken.balanceOf(address(bridge)), 1e18);
 
         vm.expectEmit(false, false, false, true);
-        emit BridgeToken(newToken2, USER_1, 1e18, sampleAddress);
-        bridge.bridgeToken(address(newToken2), 1e18, sampleAddress);
+        emit BridgeToken(newToken2, USER_1, 1e18, sampleAddress, 3);
+        bridge.bridgeToken(address(newToken2), 1e18, sampleAddress, 3);
         assertEq(newToken2.balanceOf(address(bridge)), 1e18);
         vm.stopPrank();
 
         vm.prank(USER_2);
         vm.expectEmit(false, false, false, true);
-        emit BridgeToken(WrappedToken(address(0)), USER_2, 1e18, sampleAddress);
-        bridge.bridgeToken{value: 1e18}(sampleAddress);
+        emit BridgeToken(WrappedToken(address(0)), USER_2, 1e18, sampleAddress, 3);
+        bridge.bridgeToken{value: 1e18}(sampleAddress, 3);
         assertEq(address(bridge).balance, 1e18);
 
         // build data
@@ -343,7 +343,7 @@ contract TCBridgeTest is Test {
         tokens[1] = address(0);
 
         // new proxy
-        ProxyBridge newProxy = new ProxyBridge(address(safe), address(beth), address(safe), address(bridge));
+        ProxyBridge newProxy = new ProxyBridge(address(safe), address(beth), address(safe), address(bridge), 2);
 
         address[] memory recipients = new address[](2);
         recipients[0] = address(newProxy);

@@ -8,7 +8,6 @@ import "../src/WToken.sol";
 import "../src/bridgeTwoWays/Bridge.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../src/bridgeTwoWays/Proxy.sol";
-import "../src/bridgeTwoWays/BridgeExtended.sol";
 
 contract TCScript is Script {
     address upgradeAddress;
@@ -58,8 +57,8 @@ contract TCScript is Script {
         string memory USDC = "USDC";
 
         // deploy tcbridge
-        BridgeL2 bridgeImp = new BridgeL2();
-        BridgeL2 bridge = BridgeL2(address(new TransparentUpgradeableProxy(
+        Bridge bridgeImp = new Bridge();
+        Bridge bridge = Bridge(address(new TransparentUpgradeableProxy(
             address(bridgeImp),
             upgradeAddress,
             abi.encodeWithSelector(
@@ -117,13 +116,13 @@ contract TCScript is Script {
 
 contract TCScriptOnETH is Script {
     address upgradeAddress;
+    address safeImp;
     //    address wrappedTokenImp;
-    //    address safeImp;
     //    address bridgeImp;
     function setUp() public {
         upgradeAddress = 0x9699b31b25D71BDA4819bBe66244E9130cEE62b7;
+        safeImp = 0xca973b5c638866D194fD2111ca04D749Bb3B96e7;
         //        wrappedTokenImp = 0x79DD392A7c352f0C47fB452c036EF08A1DA148C6;
-        //        safeImp = 0x47D453f4E494Ebb7264380d98D1C61420DfBB973;
         //        bridgeImp = 0xa103f20367b18D004710141Ff505A6B63CE6885C;
     }
 
@@ -141,9 +140,9 @@ contract TCScriptOnETH is Script {
         owners[5] = address(0xBa8b1B1E0DB0A771C6A513662b2B3F75FBa39D47);
         owners[6] = address(0xA2FFf21B05827406010A49e621632e31Ff349009);
 
-        Safe safeImp = new Safe();
+        // Safe safeImp = new Safe();
         Safe safe = Safe(payable(address(new TransparentUpgradeableProxy(
-            address(safeImp),
+            safeImp,
             upgradeAddress,
             abi.encodeWithSelector(
                 Safe.setup.selector,
@@ -175,7 +174,8 @@ contract TCScriptOnETH is Script {
             0x330eFf2b5E5A02Dc8f63ac24637807f2c5737E5F,
             0xc60886596E7FaA7A14F05B2Eac94601d943206b9,
             address(safe),
-            address(bridge)
+            address(bridge),
+            42069
         );
 
         vm.stopBroadcast();

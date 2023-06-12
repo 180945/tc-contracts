@@ -16,7 +16,7 @@ contract Bridge is OwnableUpgradeable {
     // events
     event Mint(WrappedToken[] tokens, address[] recipients, uint[] amounts);
     event Mint(WrappedToken token, address[] recipients, uint[] amounts);
-    event BridgeToken(WrappedToken token, address burner, uint amount, string btcAddr);
+    event BridgeToken(WrappedToken token, address burner, uint amount, string extddr, uint destChainId);
 
     function initialize(address safeMultisigContractAddress, uint chainIdEth_) external initializer {
         _transferOwnership(safeMultisigContractAddress);
@@ -65,14 +65,24 @@ contract Bridge is OwnableUpgradeable {
         }
     }
 
-    function bridgeToken(address token, uint amount, string calldata externalAddr) external {
+    function bridgeToken(address token, uint amount, string calldata externalAddr, uint destChainId) external {
+        uint chainId;
+        assembly {
+            chainId := chainid()
+        }
+        require(chainId != destChainId, "Bridge: invalid dest chain id");
         _bridgeToken(token, amount);
 
-        emit BridgeToken(WrappedToken(token), _msgSender(), amount, externalAddr);
+        emit BridgeToken(WrappedToken(token), _msgSender(), amount, externalAddr, destChainId);
     }
 
-    function bridgeToken(string calldata externalAddr) payable external {
-        emit BridgeToken(WrappedToken(address(ETH_TOKEN)), _msgSender(), msg.value, externalAddr);
+    function bridgeToken(string calldata externalAddr, uint destChainId) payable external {
+        uint chainId;
+        assembly {
+            chainId := chainid()
+        }
+        require(chainId != destChainId, "Bridge: invalid dest chain id");
+        emit BridgeToken(WrappedToken(address(ETH_TOKEN)), _msgSender(), msg.value, externalAddr, destChainId);
     }
 
     function transferToken(IERC20 token, address recipient, uint256 amount) internal {

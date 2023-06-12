@@ -3,8 +3,8 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 interface IBridgeL2 {
-    function bridgeToken(address token, uint amount, string calldata externalAddr) external;
-    function bridgeToken(string calldata externalAddr) payable external;
+    function bridgeToken(address token, uint amount, string calldata externalAddr, uint destChainId) external;
+    function bridgeToken(string calldata externalAddr, uint destChainId) payable external;
 }
 
 interface IBridgeL1 {
@@ -16,14 +16,23 @@ contract ProxyBridge {
     address constant public ETH_TOKEN = 0x0000000000000000000000000000000000000000;
     address immutable  safeL1;
     IBridgeL1 immutable bridgeL1;
+
     address immutable  safeL2;
     IBridgeL2 immutable bridgeL2;
+    uint immutable chainIdL2;
 
-    constructor(address safeL1_, address bridgeL1_, address safeL2_, address bridgeL2_) {
+    constructor(
+        address safeL1_,
+        address bridgeL1_,
+        address safeL2_,
+        address bridgeL2_,
+        uint chainIdL2_
+    ) {
         safeL1 = safeL1_;
         bridgeL1 = IBridgeL1(bridgeL1_);
         safeL2 = safeL2_;
         bridgeL2 = IBridgeL2(bridgeL2_);
+        chainIdL2 = chainIdL2_;
     }
 
     // withdraw from L1 and bridge to L2
@@ -42,12 +51,12 @@ contract ProxyBridge {
         // process L2 data
         for (uint256 i = 0; i < tokens.length; i++) {
             if (ETH_TOKEN == tokens[i]) {
-                bridgeL2.bridgeToken{value: amounts[i]}(recipients[i]);
+                bridgeL2.bridgeToken{value: amounts[i]}(recipients[i], chainIdL2);
             } else {
                 if (IERC20(tokens[i]).allowance(address(this), address(bridgeL2)) < amounts[i]) {
                     IERC20(tokens[i]).approve(address(bridgeL2), type(uint256).max);
                 }
-                bridgeL2.bridgeToken(tokens[i], amounts[i], recipients[i]);
+                bridgeL2.bridgeToken(tokens[i], amounts[i], recipients[i], chainIdL2);
             }
         }
     }
