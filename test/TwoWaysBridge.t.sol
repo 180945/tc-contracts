@@ -409,4 +409,42 @@ contract TCBridgeTest is Test {
         assertEq(address(bridge).balance, 1e18);
         assertEq(address(beth).balance, 0);
     }
+
+    function testBurnToken() public {
+        // revert if not operator
+        vm.expectRevert(bytes("Bridge: unauthorised"));
+        bridge.updateToken(address(2000), false);
+
+        // deploy 2 tokens
+        WrappedToken newToken1 = WrappedToken(address(new MockToken("test", "T", 18, 0)));
+        WrappedToken newToken2 = new WrappedToken();
+        newToken2.initialize(ADMIN_ADDR, "test2", "T");
+
+        vm.startPrank(ADMIN_ADDR);
+        newToken1.mint(USER_1, 1e18);
+        newToken2.mint(USER_1, 1e18);
+        vm.stopPrank();
+
+        // set token to burn
+        vm.prank(OPERATOR);
+        bridge.updateToken(address(newToken2), true);
+
+        // approve and bridge token
+        vm.startPrank(USER_1);
+        newToken1.approve(address(bridge), 1e18);
+        newToken2.approve(address(bridge), 1e18);
+
+        string memory sampleAddress = "0x9699b31b25D71BDA4819bBe66244E9130cEE62b7";
+        // bridge token
+        vm.expectEmit(false, false, false, true);
+        emit BridgeToken(newToken1, USER_1, 1e18, sampleAddress, 2);
+        bridge.bridgeToken(address(newToken1), 1e18, sampleAddress, 2);
+        vm.expectEmit(false, false, false, true);
+        emit BridgeToken(newToken2, USER_1, 1e18, sampleAddress, 2);
+        bridge.bridgeToken(address(newToken2), 1e18, sampleAddress, 2);
+        vm.stopPrank();
+
+        assertEq(newToken1.balanceOf(address(bridge)), 1e18);
+        assertEq(newToken2.balanceOf(address(bridge)), 0);
+    }
 }
