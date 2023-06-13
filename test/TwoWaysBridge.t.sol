@@ -12,6 +12,7 @@ import "../src/bridgeTwoWays/Proxy.sol";
 
 contract TCBridgeTest is Test {
     address public constant ADMIN_ADDR = address(10);
+    address public constant OPERATOR = address(102);
     WrappedToken public wbtc;
     Bridge public bridge;
     Safe public safe;
@@ -59,6 +60,7 @@ contract TCBridgeTest is Test {
             )
         ))));
 
+        address[] memory tokens;
         // deploy bridge
         Bridge bridgeImp = new Bridge();
         bridge = Bridge(address(new TransparentUpgradeableProxy(
@@ -67,7 +69,8 @@ contract TCBridgeTest is Test {
             abi.encodeWithSelector(
                 Bridge.initialize.selector,
                 address(safe),
-                chainIdEth // eth
+                OPERATOR,
+                tokens
             )
         )));
 
