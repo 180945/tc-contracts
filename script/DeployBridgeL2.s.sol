@@ -11,6 +11,7 @@ import "../src/bridgeTwoWays/Proxy.sol";
 
 contract TCScript is Script {
     address upgradeAddress;
+    address operator;
 //    address wrappedTokenImp;
 //    address safeImp;
 //    address bridgeImp;
@@ -19,6 +20,7 @@ contract TCScript is Script {
 //        wrappedTokenImp = 0x79DD392A7c352f0C47fB452c036EF08A1DA148C6;
 //        safeImp = 0x47D453f4E494Ebb7264380d98D1C61420DfBB973;
 //        bridgeImp = 0xa103f20367b18D004710141Ff505A6B63CE6885C;
+        operator = 0x7286D69ed81DE05563264b9f4d47620B7768f318;
     }
 
     function run() public {
@@ -52,9 +54,10 @@ contract TCScript is Script {
             )
         ))));
 
-        string memory BTC = "BTC";
-        string memory ETH = "ETH";
-        string memory USDC = "USDC";
+        address[] memory tokens = new address[](3);
+        tokens[0] = 0xCAA77c6FB686b84Ffa16644a8588AABA66162cEC;
+        tokens[1] = 0x205FB47E1151800B0Af7985aea1b63fAB61BbEF4;
+        tokens[2] = 0x9A3c5B6D78cE858F9882D4444446643Bb5E8Ac45;
 
         // deploy tcbridge
         Bridge bridgeImp = new Bridge();
@@ -64,9 +67,14 @@ contract TCScript is Script {
             abi.encodeWithSelector(
                 Bridge.initialize.selector,
                 address(safe),
-                5
+                operator,
+                tokens
             )
         )));
+
+        string memory BTC = "BTC";
+        string memory ETH = "ETH";
+        string memory USDC = "USDC";
 
         WrappedToken wrappedTokenImp = new WrappedToken();
         // deploy wrapped token
