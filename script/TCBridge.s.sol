@@ -54,6 +54,10 @@ contract TCScript is Script {
             )
         ))));
 
+        string memory BTC = "ORE";
+        string memory ETH = "OXBT";
+        string memory USDC = "ORDI";
+
         // deploy tcbridge
         TCBridge tcBridge = TCBridge(address(new TransparentUpgradeableProxy(
             tcbridgeImp,
@@ -71,8 +75,8 @@ contract TCScript is Script {
             abi.encodeWithSelector(
                 WrappedToken.initialize.selector,
                 tcBridge,
-                "ETH",
-                "ETH"
+                BTC,
+                BTC
             )
         )));
 
@@ -82,8 +86,8 @@ contract TCScript is Script {
             abi.encodeWithSelector(
                 WrappedToken.initialize.selector,
                 tcBridge,
-                "BTC",
-                "BTC"
+                ETH,
+                ETH
             )
         )));
 
@@ -93,8 +97,8 @@ contract TCScript is Script {
             abi.encodeWithSelector(
                 WrappedToken.initialize.selector,
                 tcBridge,
-                "USDC",
-                "USDC"
+                USDC,
+                USDC
             )
         )));
         vm.stopBroadcast();
@@ -102,9 +106,9 @@ contract TCScript is Script {
         console.log("=== Deployment addresses ===");
         console.log("Safe address %s", address(safe));
         console.log("TCBridge address  %s", address(tcBridge));
-        console.log("ETH address  %s", address(oxbt));
-        console.log("BTC address  %s", address(ore));
-        console.log("USDC address  %s", address(ordi));
+        console.log("%s address  %s", BTC, address(oxbt));
+        console.log("%s address  %s", ETH, address(ore));
+        console.log("%s address  %s", USDC, address(ordi));
     }
 }
 

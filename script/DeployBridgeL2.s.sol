@@ -72,9 +72,9 @@ contract TCScript is Script {
             )
         )));
 
-        string memory BTC = "BTC";
-        string memory ETH = "ETH";
-        string memory USDC = "USDC";
+        string memory BTC = "ORE";
+        string memory ETH = "OXBT";
+        string memory USDC = "ORDI";
 
         WrappedToken wrappedTokenImp = new WrappedToken();
         // deploy wrapped token
@@ -116,20 +116,22 @@ contract TCScript is Script {
         console.log("=== Deployment addresses ===");
         console.log("Safe address %s", address(safe));
         console.log("Bridge address  %s", address(bridge));
-        console.log("BTC address  %s", address(oxbt));
-        console.log("ETH address  %s", address(ore));
-        console.log("USDC address  %s", address(ordi));
+        console.log("ORE address  %s", address(oxbt));
+        console.log("OXBT address  %s", address(ore));
+        console.log("ORDI address  %s", address(ordi));
     }
 }
 
 contract TCScriptOnETH is Script {
     address upgradeAddress;
     address safeImp;
+    address operator;
     //    address wrappedTokenImp;
     //    address bridgeImp;
     function setUp() public {
         upgradeAddress = 0x9699b31b25D71BDA4819bBe66244E9130cEE62b7;
-        safeImp = 0xca973b5c638866D194fD2111ca04D749Bb3B96e7;
+        safeImp = 0xd154cFc746860697B6D63bb614449363F51D9cd6;
+        operator = 0x7286D69ed81DE05563264b9f4d47620B7768f318;
         //        wrappedTokenImp = 0x79DD392A7c352f0C47fB452c036EF08A1DA148C6;
         //        bridgeImp = 0xa103f20367b18D004710141Ff505A6B63CE6885C;
     }
@@ -166,6 +168,7 @@ contract TCScriptOnETH is Script {
         ))));
 
         // deploy tcbridge
+        address[] memory tokens;
         Bridge bridgeImp = new Bridge();
         Bridge bridge = Bridge(address(new TransparentUpgradeableProxy(
             address(bridgeImp),
@@ -173,14 +176,15 @@ contract TCScriptOnETH is Script {
             abi.encodeWithSelector(
                 Bridge.initialize.selector,
                 address(safe),
-                5
+                operator,
+                tokens
             )
         )));
 
         // deploy proxy
         ProxyBridge proxyBridge = new ProxyBridge(
-            0x182d6B766bD3Fe95B51b73cB1f9aD70b94F66E89,
-            0xc2542C42596A8C8aD3e3ed737858F58211745Dd4,
+            0x330eFf2b5E5A02Dc8f63ac24637807f2c5737E5F,
+            0xc60886596E7FaA7A14F05B2Eac94601d943206b9,
             address(safe),
             address(bridge),
             42069
