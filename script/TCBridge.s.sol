@@ -30,13 +30,13 @@ contract TCScript is Script {
 
         // deploy bridge tc contract
         address[] memory owners = new address[](7);
-        owners[0] = address(0x990F4bAb2EEE01E74A5D180120eFA5267D17FC67);
-        owners[1] = address(0xCe91d43217b95cdB0974a40FAe776E80Db3A7cdd);
-        owners[2] = address(0x66bfb1A5EAbf746f5faC5A24E35C5fAa28A881A7);
-        owners[3] = address(0x11FF5A145EDAE91C9a6ea8E1E0740F1A71a8b72B);
-        owners[4] = address(0x93Fc71ebb6ECFaB8681769b205202894935BB2be);
-        owners[5] = address(0xBa8b1B1E0DB0A771C6A513662b2B3F75FBa39D47);
-        owners[6] = address(0xA2FFf21B05827406010A49e621632e31Ff349009);
+        owners[0] = address(0xF165DBE65127feca0abbD7d734B4a2a3c3C6aA84);
+        owners[1] = address(0xd1950Ce1cd947B0F0378c9eB9618b705A13539A2);
+        owners[2] = address(0x2150E0F033f2F8E8c13Fe2089A0cB399521604FF);
+        owners[3] = address(0x9B9e024D6C2a9c3eF921497FbE53c57a851321cd);
+        owners[4] = address(0xd85f5f63E83bDec8a92dd3C7f7FaEFE671024d85);
+        owners[5] = address(0xD898eE20D858da55A7A58D1069BD47be234dC50f);
+        owners[6] = address(0xB39310E75b773876dBa6006aDeE116BC40363994);
 
         Safe safe = Safe(payable(address(new TransparentUpgradeableProxy(
             safeImp,
@@ -54,9 +54,9 @@ contract TCScript is Script {
             )
         ))));
 
-        string memory BTC = "ORE";
-        string memory ETH = "OXBT";
-        string memory USDC = "ORDI";
+        string memory BTC = "BTC";
+        string memory ETH = "ETH";
+        string memory USDC = "USDC";
 
         // deploy tcbridge
         TCBridge tcBridge = TCBridge(address(new TransparentUpgradeableProxy(

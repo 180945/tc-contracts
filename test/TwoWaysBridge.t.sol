@@ -412,8 +412,14 @@ contract TCBridgeTest is Test {
 
     function testBurnToken() public {
         // revert if not operator
+        address[] memory tokens = new address[](1);
+        tokens[0] = address(2000);
+        bool[] memory isBurns = new bool[](1);
+        isBurns[0] = false;
+
         vm.expectRevert(bytes("Bridge: unauthorised"));
-        bridge.updateToken(address(2000), false);
+
+        bridge.updateToken(tokens, isBurns);
 
         // deploy 2 tokens
         WrappedToken newToken1 = WrappedToken(address(new MockToken("test", "T", 18, 0)));
@@ -426,8 +432,10 @@ contract TCBridgeTest is Test {
         vm.stopPrank();
 
         // set token to burn
+        tokens[0] = address(newToken2);
+        isBurns[0] = true;
         vm.prank(OPERATOR);
-        bridge.updateToken(address(newToken2), true);
+        bridge.updateToken(tokens, isBurns);
 
         // approve and bridge token
         vm.startPrank(USER_1);

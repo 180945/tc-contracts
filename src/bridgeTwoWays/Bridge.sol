@@ -96,9 +96,18 @@ contract Bridge is OwnableUpgradeable {
         }
     }
 
-    function updateToken(address token, bool isBurn) external {
+    function updateToken(address[] calldata tokens, bool[] calldata isBurns) external {
+        require(_msgSender() == operator, "Bridge: unauthorised");
+        require(tokens.length == isBurns.length, "Bridge: mismatch data length");
+
+        for (uint i = 0; i < tokens.length; i++) {
+            burnableToken[tokens[i]] = isBurns[i];
+        }
+    }
+
+    function transferOperator(address operator_) external {
         require(_msgSender() == operator, "Bridge: unauthorised");
 
-        burnableToken[token] = isBurn;
+        operator = operator_;
     }
 }
