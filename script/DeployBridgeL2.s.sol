@@ -69,93 +69,56 @@ contract TCScript is Script {
             )
         )));
 
-        string memory BTC = "BTC";
-        string memory ETH = "ETH";
-        string memory USDC = "USDC";
-        string memory PEPE = "PEPE";
-        string memory USDT = "USDT";
+        uint tokenCount = 5;
+        string[] memory names = new string[](tokenCount);
+        names[0] = "Bitcoin";
+        names[1] = "Ethereum";
+        names[2] = "USDC";
+        names[3] = "PEPE";
+        names[4] = "Tether";
 
+        string[] memory symbols = new string[](tokenCount);
+        symbols[0] = "BTC";
+        symbols[1] = "ETH";
+        symbols[2] = "USDC";
+        symbols[3] = "PEPE";
+        symbols[4] = "USDT";
+
+        address[] memory results = new address[](tokenCount);
         WrappedToken wrappedTokenImp = new WrappedToken();
         // deploy wrapped token
-        WrappedToken oxbt = WrappedToken(address(new TransparentUpgradeableProxy(
-            address(wrappedTokenImp),
-            upgradeAddress,
-            abi.encodeWithSelector(
-                WrappedToken.initialize.selector,
-                bridge,
-                "Bitcoin",
-                BTC
-            )
-        )));
+        for (uint i = 0; i < names.length; i++) {
+            results[i] = address(new TransparentUpgradeableProxy(
+                address(wrappedTokenImp),
+                upgradeAddress,
+                abi.encodeWithSelector(
+                    WrappedToken.initialize.selector,
+                    bridge,
+                    names[i],
+                    symbols[i]
+                )
+            ));
+        }
 
-        WrappedToken ore = WrappedToken(address(new TransparentUpgradeableProxy(
-            address(wrappedTokenImp),
-            upgradeAddress,
-            abi.encodeWithSelector(
-                WrappedToken.initialize.selector,
-                bridge,
-                "Ethereum",
-                ETH
-            )
-        )));
-
-        WrappedToken ordi = WrappedToken(address(new TransparentUpgradeableProxy(
-            address(wrappedTokenImp),
-            upgradeAddress,
-            abi.encodeWithSelector(
-                WrappedToken.initialize.selector,
-                bridge,
-                USDC,
-                USDC
-            )
-        )));
-
-        WrappedToken pepe = WrappedToken(address(new TransparentUpgradeableProxy(
-            address(wrappedTokenImp),
-            upgradeAddress,
-            abi.encodeWithSelector(
-                WrappedToken.initialize.selector,
-                bridge,
-                PEPE,
-                PEPE
-            )
-        )));
-
-        WrappedToken usdt = WrappedToken(address(new TransparentUpgradeableProxy(
-            address(wrappedTokenImp),
-            upgradeAddress,
-            abi.encodeWithSelector(
-                WrappedToken.initialize.selector,
-                bridge,
-                "Tether",
-                USDT
-            )
-        )));
-
-        address[] memory tokens2 = new address[](5);
-        tokens2[0] = address(oxbt);
-        tokens2[1] = address(ore);
-        tokens2[2] = address(ordi);
-        tokens2[3] = address(pepe);
-        tokens2[4] = address(usdt);
-        bool[] memory isBurns = new bool[](5);
-        isBurns[0] = true;
-        isBurns[1] = true;
-        isBurns[2] = true;
-        isBurns[3] = true;
-        isBurns[4] = true;
-        bridge.updateToken(tokens2, isBurns);
-
+        {
+            bool[] memory isBurns = new bool[](tokenCount);
+            isBurns[0] = true;
+            isBurns[1] = true;
+            isBurns[2] = true;
+            isBurns[3] = true;
+            isBurns[4] = true;
+            bridge.updateToken(results, isBurns);
+        }
         vm.stopBroadcast();
 
-        console.log("=== Deployment addresses ===");
-        console.log("Safe address %s", address(safe));
-        console.log("Bridge address  %s", address(bridge));
-        console.log("%s address  %s", BTC, address(oxbt));
-        console.log("%s address  %s", ETH, address(ore));
-        console.log("%s address  %s", USDC, address(ordi));
-        console.log("%s address  %s", PEPE, address(pepe));
-        console.log("%s address  %s", USDT, address(usdt));
+        {
+            console.log("=== Deployment addresses ===");
+            console.log("Safe address %s", address(safe));
+            console.log("Bridge address  %s", address(bridge));
+            for (uint i = 0; i < names.length; i++) {
+                console.log("%s address  %s", symbols[i], results[i]);
+            }
+        }
     }
 }
 
