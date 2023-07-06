@@ -4,3 +4,4 @@ forge-std/=lib/forge-std/src/
 @openzeppelin-upgradeable=lib/openzeppelin-contracts-upgradeable/
 @safe-contracts=lib/safe-contracts
 @tc=lib/tc
+@prb-math=lib/prb-math
