@@ -268,8 +268,13 @@ contract TicTacToe is TurnBasedGame {
         return Players.None;
     }
 
-    function getGameState(uint gameId) public view returns(Players[BOARD_SIZE][BOARD_SIZE] memory) {
-        return games[gameId].board;
+    function getGameState(uint gameId) public view returns(Players[BOARD_SIZE][BOARD_SIZE] memory, bool, int256, int256, MatchData memory) {
+        (bool turn, int256 timeLeft, int256 playerTimePool) = getTurn(gameId);
+        return (
+            games[gameId].board,
+            turn, timeLeft, playerTimePool,
+            matches[gameId]
+        );
     }
 
     function version() override external pure returns (string memory) {

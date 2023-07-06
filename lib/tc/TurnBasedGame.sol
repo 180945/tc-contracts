@@ -164,7 +164,7 @@ abstract contract TurnBasedGame is OwnableUpgradeable, PausableUpgradeable {
         return matchesOfPlayer[matchesOfPlayer.length - 1];
     }
 
-    function getTurn(uint256 _matchId) external view returns (bool, int256, int256) {
+    function getTurn(uint256 _matchId) public view returns (bool, int256, int256) {
         int256 timeUsed = int256(block.timestamp) - int256(matches[_matchId].turnTimePivot);
         return (
             matches[_matchId].turn,
