@@ -2,6 +2,9 @@
 pragma solidity ^0.8.17;
 
 
+uint constant BOARDZIE = 15;
+uint constant WIN_IN_ROW = 5;
+
 // TicTacToe is a solidity implementation of the tic tac toe game.
 // You can find the rules at https://en.wikipedia.org/wiki/Tic-tac-toe
 contract TicTacToe {
@@ -25,7 +28,9 @@ contract TicTacToe {
         address playerTwo;
         Winners winner;
         Players playerTurn;
-        Players[3][3] board;
+        uint16 totalMoved;
+        Players[BOARDZIE][BOARDZIE] board;
+
     }
 
     // games stores all the games.
@@ -122,9 +127,10 @@ contract TicTacToe {
         // Now the move is recorded and the according event emitted.
         game.board[_xCoordinate][_yCoordinate] = game.playerTurn;
         emit PlayerMadeMove(_gameId, msg.sender, _xCoordinate, _yCoordinate);
+        game.totalMoved++;
 
         // Check if there is a winner now that we have a new move.
-        Winners winner = calculateWinner(game.board);
+        Winners winner = calculateWinner(_gameId, _xCoordinate, _yCoordinate);
         if (winner != Winners.None) {
             // If there is a winner (can be a `Draw`) it must be recorded in the game and
             // the corresponding event must be emitted.
@@ -157,11 +163,12 @@ contract TicTacToe {
 
     // calculateWinner returns the winner on the given board.
     // The returned winner can be `None` in which case there is no winner and no draw.
-    function calculateWinner(Players[3][3] memory _board) private pure returns (Winners winner) {
+    function calculateWinner(uint256 _gameId, uint256 _xCoordinate, uint256 _yCoordinate) private view returns (Winners winner) {
         // First we check if there is a victory in a row.
         // If so, convert `Players` to `Winners`
         // Subsequently we do the same for columns and diagonals.
-        Players player = winnerInRow(_board);
+        Players[BOARDZIE][BOARDZIE] memory _board = games[_gameId].board;
+        Players player = winnerInRow(_board, _xCoordinate, _yCoordinate);
         if (player == Players.PlayerOne) {
             return Winners.PlayerOne;
         }
@@ -169,7 +176,7 @@ contract TicTacToe {
             return Winners.PlayerTwo;
         }
 
-        player = winnerInColumn(_board);
+        player = winnerInColumn(_board, _xCoordinate, _yCoordinate);
         if (player == Players.PlayerOne) {
             return Winners.PlayerOne;
         }
@@ -177,7 +184,7 @@ contract TicTacToe {
             return Winners.PlayerTwo;
         }
 
-        player = winnerInDiagonal(_board);
+        player = winnerInDiagonal(_board, _xCoordinate, _yCoordinate);
         if (player == Players.PlayerOne) {
             return Winners.PlayerOne;
         }
@@ -187,7 +194,7 @@ contract TicTacToe {
 
         // If there is no winner and no more space on the board,
         // then it is a draw.
-        if (isBoardFull(_board)) {
+        if (games[_gameId].totalMoved == uint16(BOARDZIE * BOARDZIE)) {
             return Winners.Draw;
         }
 
@@ -197,15 +204,38 @@ contract TicTacToe {
     // winnerInRow returns the player that wins in any row.
     // To win in a row, all cells in the row must belong to the same player
     // and that player must not be the `None` player.
-    function winnerInRow(Players[3][3] memory _board) private pure returns (Players winner) {
-        for (uint8 x = 0; x < 3; x++) {
-            if (
-                _board[x][0] == _board[x][1]
-                && _board[x][1]  == _board[x][2]
-                && _board[x][0] != Players.None
-            ) {
-                return _board[x][0];
+    function winnerInRow(Players[BOARDZIE][BOARDZIE] memory _board, uint256 _xCoordinate, uint256 _yCoordinate) private pure returns (Players winner) {
+        uint totalInRow = 1;
+        Players player = _board[_xCoordinate][_yCoordinate];
+        // count on the right
+        for (uint i = 1; i < WIN_IN_ROW; i++) {
+            if (_xCoordinate < i) {
+                break;
             }
+            if (_board[_xCoordinate - i][_yCoordinate] == player) {
+                totalInRow++;
+            } else {
+                break;
+            }
+
+        }
+
+        // count on the left
+        for (uint i = 1; i < WIN_IN_ROW; i++) {
+            if (_xCoordinate + i >= BOARDZIE) {
+                break;
+            }
+            if (_board[_xCoordinate + i][_yCoordinate] == player) {
+                totalInRow++;
+            } else {
+                break;
+            }
+
+        }
+
+        // total to determine winner
+        if (totalInRow >= WIN_IN_ROW) {
+            return player;
         }
 
         return Players.None;
@@ -214,15 +244,38 @@ contract TicTacToe {
     // winnerInColumn returns the player that wins in any column.
     // To win in a column, all cells in the column must belong to the same player
     // and that player must not be the `None` player.
-    function winnerInColumn(Players[3][3] memory _board) private pure returns (Players winner) {
-        for (uint8 y = 0; y < 3; y++) {
-            if (
-                _board[0][y] == _board[1][y]
-                && _board[1][y] == _board[2][y]
-                && _board[0][y] != Players.None
-            ) {
-                return _board[0][y];
+    function winnerInColumn(Players[BOARDZIE][BOARDZIE] memory _board, uint256 _xCoordinate, uint256 _yCoordinate) private pure returns (Players winner) {
+        uint totalInRow = 1;
+        Players player = _board[_xCoordinate][_yCoordinate];
+        // count above
+        for (uint i = 1; i < WIN_IN_ROW; i++) {
+            if (_yCoordinate < i) {
+                break;
             }
+            if (_board[_xCoordinate][_yCoordinate - i] == player) {
+                totalInRow++;
+            } else {
+                break;
+            }
+
+        }
+
+        // count below
+        for (uint i = 1; i < WIN_IN_ROW; i++) {
+            if (_yCoordinate + i >= BOARDZIE) {
+                break;
+            }
+            if (_board[_xCoordinate][_yCoordinate + i] == player) {
+                totalInRow++;
+            } else {
+                break;
+            }
+
+        }
+
+        // total to determine winner
+        if (totalInRow >= WIN_IN_ROW) {
+            return player;
         }
 
         return Players.None;
@@ -231,38 +284,71 @@ contract TicTacToe {
     // winnerInDiagoral returns the player that wins in any diagonal.
     // To win in a diagonal, all cells in the diaggonal must belong to the same player
     // and that player must not be the `None` player.
-    function winnerInDiagonal(Players[3][3] memory _board) private pure returns (Players winner) {
-        if (
-            _board[0][0] == _board[1][1]
-            && _board[1][1] == _board[2][2]
-            && _board[0][0] != Players.None
-        ) {
-            return _board[0][0];
+    function winnerInDiagonal(Players[BOARDZIE][BOARDZIE] memory _board, uint256 _xCoordinate, uint256 _yCoordinate) private pure returns (Players winner) {
+        uint totalInRow = 1;
+        Players player = _board[_xCoordinate][_yCoordinate];
+        // back cross
+        for (uint i = 1; i < WIN_IN_ROW; i++) {
+            if (_xCoordinate < i || _yCoordinate < i) {
+                break;
+            }
+            if (_board[_xCoordinate - i][_yCoordinate - i] == player) {
+                totalInRow++;
+            } else {
+                break;
+            }
+
         }
 
-        if (
-            _board[0][2] == _board[1][1]
-            && _board[1][1] == _board[2][0]
-            && _board[0][2] != Players.None
-        ) {
-            return _board[0][2];
+        for (uint i = 1; i < WIN_IN_ROW; i++) {
+            if (_xCoordinate + i >= BOARDZIE || _yCoordinate + i >= BOARDZIE) {
+                break;
+            }
+            if (_board[_xCoordinate + i][_yCoordinate + i] == player) {
+                totalInRow++;
+            } else {
+                break;
+            }
+
+        }
+        // total to determine winner
+        if (totalInRow >= WIN_IN_ROW) {
+            return player;
+        }
+
+        totalInRow = 1;
+
+        // fordward cross
+        for (uint i = 1; i < WIN_IN_ROW; i++) {
+            if (_xCoordinate < i || _yCoordinate + i >= BOARDZIE) {
+                break;
+            }
+            if (_board[_xCoordinate - i][_yCoordinate + i] == player) {
+                totalInRow++;
+            } else {
+                break;
+            }
+
+        }
+
+        for (uint i = 1; i < WIN_IN_ROW; i++) {
+            if (_xCoordinate + i >= BOARDZIE || _yCoordinate < i) {
+                break;
+            }
+            if (_board[_xCoordinate + i][_yCoordinate - i] == player) {
+                totalInRow++;
+            } else {
+                break;
+            }
+
+        }
+
+        // total to determine winner
+        if (totalInRow >= WIN_IN_ROW) {
+            return player;
         }
 
         return Players.None;
-    }
-
-    // isBoardFull returns true if all cells of the board belong to a player other
-    // than `None`.
-    function isBoardFull(Players[3][3] memory _board) private pure returns (bool isFull) {
-        for (uint8 x = 0; x < 3; x++) {
-            for (uint8 y = 0; y < 3; y++) {
-                if (_board[x][y] == Players.None) {
-                    return false;
-                }
-            }
-        }
-
-        return true;
     }
 
     // nextPlayer changes whose turn it is for the given `_game`.
@@ -274,7 +360,7 @@ contract TicTacToe {
         }
     }
 
-    function getGameState(uint gameId) public view returns(Players[3][3] memory) {
+    function getGameState(uint gameId) public view returns(Players[BOARDZIE][BOARDZIE] memory) {
         return games[gameId].board;
     }
 }
