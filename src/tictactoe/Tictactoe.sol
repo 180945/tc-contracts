@@ -34,11 +34,24 @@ contract TicTacToe is TurnBasedGame {
     // It is possible to iterate over all games, as the keys of the mapping
     // are known to be the integers from `1` to `nrOfGames`.
     mapping(uint256 => Game) public games;
+
+    function initialize(
+        uint256 _turnDuration,
+        uint256 _playerTimePool
+    ) external initializer {
+        __TurnBaseGame_init(_turnDuration, _playerTimePool);
+    }
+
     // makeMove inserts a player on the game board.
     // The player is identified as the sender of the message.
     function makeMove(uint256 _matchId, uint _xCoordinate, uint _yCoordinate) external notTimeOutMatch(_matchId) notEndedMatch(_matchId) {
         Game storage game = games[_matchId];
         bool p1Turn = matches[_matchId].turn;
+
+        if (game.board[_xCoordinate][_yCoordinate] != Players.None) {
+            revert MoveProhibited();
+        }
+
         unchecked {
             uint128 timeUsed = uint128(block.timestamp - matches[_matchId].turnTimePivot);
 

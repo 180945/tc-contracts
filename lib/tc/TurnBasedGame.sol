@@ -123,7 +123,7 @@ abstract contract TurnBasedGame is OwnableUpgradeable, PausableUpgradeable {
     function __TurnBaseGame_init(
         uint256 _turnDuration,
         uint256 _playerTimePool
-    ) external initializer {
+    ) internal onlyInitializing {
         __Ownable_init();
         __Pausable_init();
         turnDuration = _turnDuration;
