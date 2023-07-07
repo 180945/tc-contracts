@@ -7,12 +7,16 @@ import "../src/bridgeTwoWays/Bridge.sol";
 import "@safe-contracts/contracts/Safe.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "./MockToken.sol";
+import "../src/ethereum/TCBridgeETH.sol";
+import "../src/bridgeTwoWays/Proxy.sol";
 
 contract TCBridgeTest is Test {
     address public constant ADMIN_ADDR = address(10);
+    address public constant OPERATOR = address(102);
     WrappedToken public wbtc;
     Bridge public bridge;
     Safe public safe;
+    uint private chainIdEth = 1;
     address public o1 = address(0x9699b31b25D71BDA4819bBe66244E9130cEE62b7);
     uint256 public prv1 = uint256(0x1193a43543fc11e37daa1a026ae8fae69d84c5dd1f3f933047ff2588778c5cca);
 
@@ -29,7 +33,7 @@ contract TCBridgeTest is Test {
     // events
     event Mint(WrappedToken[] tokens, address[] recipients, uint[] amounts);
     event Mint(WrappedToken token, address[] recipients, uint[] amounts);
-    event BridgeToken(WrappedToken token, address burner, uint amount, string btcAddr);
+    event BridgeToken(WrappedToken token, address burner, uint amount, string extddr, uint destChainId);
 
     function setUp() public {
         // deploy multisig wallet
@@ -38,6 +42,7 @@ contract TCBridgeTest is Test {
         owners[1] = o2;
         owners[2] = o3;
 
+        vm.chainId(1);
         Safe impl = new Safe();
         safe = Safe(payable(address(new TransparentUpgradeableProxy(
             address(impl),
@@ -55,6 +60,7 @@ contract TCBridgeTest is Test {
             )
         ))));
 
+        address[] memory tokens;
         // deploy bridge
         Bridge bridgeImp = new Bridge();
         bridge = Bridge(address(new TransparentUpgradeableProxy(
@@ -62,7 +68,9 @@ contract TCBridgeTest is Test {
             ADMIN_ADDR,
             abi.encodeWithSelector(
                 Bridge.initialize.selector,
-                address(safe)
+                address(safe),
+                OPERATOR,
+                tokens
             )
         )));
 
@@ -226,25 +234,20 @@ contract TCBridgeTest is Test {
         newToken2.approve(address(bridge), 1e30);
 
         vm.expectEmit(false, false, false, true);
-        emit BridgeToken(newToken, USER_1, 1e18, sampleAddress);
-        bridge.bridgeToken(newToken, 1e18, sampleAddress);
+        emit BridgeToken(newToken, USER_1, 1e18, sampleAddress, 3);
+        bridge.bridgeToken(address(newToken), 1e18, sampleAddress, 3);
         assertEq(newToken.balanceOf(address(bridge)), 1e18);
 
         vm.expectEmit(false, false, false, true);
-        emit BridgeToken(wbtc, USER_1, 1e16, sampleAddress);
-        bridge.bridgeToken(wbtc, 1e16, sampleAddress);
-        assertEq(wbtc.balanceOf(address(bridge)), 0);
-
-        vm.expectEmit(false, false, false, true);
-        emit BridgeToken(newToken2, USER_1, 1e18, sampleAddress);
-        bridge.bridgeToken(newToken2, 1e18, sampleAddress);
+        emit BridgeToken(newToken2, USER_1, 1e18, sampleAddress, 3);
+        bridge.bridgeToken(address(newToken2), 1e18, sampleAddress, 3);
         assertEq(newToken2.balanceOf(address(bridge)), 1e18);
         vm.stopPrank();
 
         vm.prank(USER_2);
         vm.expectEmit(false, false, false, true);
-        emit BridgeToken(WrappedToken(address(0)), USER_2, 1e18, sampleAddress);
-        bridge.bridgeToken{value: 1e18}(sampleAddress);
+        emit BridgeToken(WrappedToken(address(0)), USER_2, 1e18, sampleAddress, 3);
+        bridge.bridgeToken{value: 1e18}(sampleAddress, 3);
         assertEq(address(bridge).balance, 1e18);
 
         // build data
@@ -307,5 +310,149 @@ contract TCBridgeTest is Test {
         assertEq(wbtc.balanceOf(address(201)), 1e18);
         assertEq(newToken2.balanceOf(address(202)), 1e18);
         assertEq(address(203).balance, 1e18);
+    }
+
+    /// @dev test L1 to L2
+    function testL1toL2() public {
+        // deploy new ETH bridge
+        TCBridgeETH beth = TCBridgeETH(address(new TransparentUpgradeableProxy(
+            address(new TCBridgeETH()),
+            ADMIN_ADDR,
+            abi.encodeWithSelector(
+                TCBridgeETH.initialize.selector,
+                address(safe)
+            )
+        )));
+
+        // init balances
+        vm.deal(USER_1, 5 * 1e18);
+        WrappedToken testToken = new WrappedToken();
+        testToken.initialize(ADMIN_ADDR, "1", "2");
+        vm.prank(ADMIN_ADDR);
+        testToken.mint(USER_2, 1e18);
+
+        // deposit to the bridge
+        vm.prank(USER_1);
+        beth.deposit{value: 1e18}(USER_1);
+
+        vm.startPrank(USER_2);
+        testToken.approve(address(beth), 1e39);
+        beth.deposit(IERC20(address(testToken)), 1e18, USER_2);
+        vm.stopPrank();
+
+        // test withdraw and deposit
+        address[] memory tokens = new address[](2);
+        tokens[0] = address(testToken);
+        tokens[1] = address(0);
+
+        // new proxy
+        ProxyBridge newProxy = new ProxyBridge(address(safe), address(beth), address(safe), address(bridge), 2);
+
+        address[] memory recipients = new address[](2);
+        recipients[0] = address(newProxy);
+        recipients[1] = address(newProxy);
+
+        uint[] memory amounts = new uint[](2);
+        amounts[0] = 1e18;
+        amounts[1] = 1e18;
+
+        bytes memory withdrawCallData = abi.encodeWithSelector(
+            bytes4(keccak256("withdraw(address[],address[],uint256[])")),
+            tokens,
+            recipients,
+            amounts
+        );
+
+        bytes memory encodeTx = safe.encodeTransactionData(
+            address(beth),
+            0,
+            withdrawCallData,
+            Enum.Operation.Call,
+            0,
+            0,
+            0,
+            address(0),
+            ADMIN_ADDR,
+            safe.nonce()
+        );
+        bytes32 txHash = keccak256(encodeTx);
+        bytes memory signatures;
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(prv2, txHash);
+        signatures = abi.encodePacked(signatures, r, s, v);
+
+        (v, r, s) = vm.sign(prv1, txHash);
+        signatures = abi.encodePacked(signatures, r, s, v);
+
+        withdrawCallData = abi.encodeWithSelector(
+            Safe.execTransaction.selector,
+            address(beth),
+            0,
+            withdrawCallData,
+            Enum.Operation.Call,
+            0,
+            0,
+            0,
+            address(0),
+            payable(ADMIN_ADDR),
+            signatures
+        );
+
+        string[] memory recipients2 = new string[](2);
+        recipients2[0] = "test";
+        recipients2[1] = "test2";
+
+        assertEq(address(beth).balance, 1e18);
+        assertEq(address(bridge).balance, 0);
+        // execute bridge
+        newProxy.bridgeL1ToL2(withdrawCallData, tokens, amounts, recipients2);
+        // check balance
+        assertEq(address(bridge).balance, 1e18);
+        assertEq(address(beth).balance, 0);
+    }
+
+    function testBurnToken() public {
+        // revert if not operator
+        address[] memory tokens = new address[](1);
+        tokens[0] = address(2000);
+        bool[] memory isBurns = new bool[](1);
+        isBurns[0] = false;
+
+        vm.expectRevert(bytes("Bridge: unauthorised"));
+
+        bridge.updateToken(tokens, isBurns);
+
+        // deploy 2 tokens
+        WrappedToken newToken1 = WrappedToken(address(new MockToken("test", "T", 18, 0)));
+        WrappedToken newToken2 = new WrappedToken();
+        newToken2.initialize(ADMIN_ADDR, "test2", "T");
+
+        vm.startPrank(ADMIN_ADDR);
+        newToken1.mint(USER_1, 1e18);
+        newToken2.mint(USER_1, 1e18);
+        vm.stopPrank();
+
+        // set token to burn
+        tokens[0] = address(newToken2);
+        isBurns[0] = true;
+        vm.prank(OPERATOR);
+        bridge.updateToken(tokens, isBurns);
+
+        // approve and bridge token
+        vm.startPrank(USER_1);
+        newToken1.approve(address(bridge), 1e18);
+        newToken2.approve(address(bridge), 1e18);
+
+        string memory sampleAddress = "0x9699b31b25D71BDA4819bBe66244E9130cEE62b7";
+        // bridge token
+        vm.expectEmit(false, false, false, true);
+        emit BridgeToken(newToken1, USER_1, 1e18, sampleAddress, 2);
+        bridge.bridgeToken(address(newToken1), 1e18, sampleAddress, 2);
+        vm.expectEmit(false, false, false, true);
+        emit BridgeToken(newToken2, USER_1, 1e18, sampleAddress, 2);
+        bridge.bridgeToken(address(newToken2), 1e18, sampleAddress, 2);
+        vm.stopPrank();
+
+        assertEq(newToken1.balanceOf(address(bridge)), 1e18);
+        assertEq(newToken2.balanceOf(address(bridge)), 0);
     }
 }
