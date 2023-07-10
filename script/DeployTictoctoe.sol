@@ -10,7 +10,7 @@ contract TictoctoeScript is Script {
     uint256 playerTimePool;
     function setUp() public {
         upgradeAddress = 0xE7143319283D0b5b234AEA046769D40bee5C6D43;
-        turnDuration = 5 * 60;
+        turnDuration = 30;
         playerTimePool = 1000000000000;
     }
 

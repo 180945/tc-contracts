@@ -79,6 +79,22 @@ contract TicTacToe is TurnBasedGame {
         }
     }
 
+    // winner forget trigger make move function with check winner can retry by this function
+    function claimWinner(uint256 _matchId, uint _xCoordinate, uint _yCoordinate) external notEndedMatch(_matchId) {
+        Game storage game = games[_matchId];
+        // invalid request
+        if (game.board[_xCoordinate][_yCoordinate] == Players.None) {
+            revert MoveProhibited();
+        }
+
+        // check and update winner
+        Winners winner = calculateWinner(_matchId, _xCoordinate, _yCoordinate);
+        if (winner != Winners.None) {
+            MatchResult result = MatchResult(uint8(winner));
+            endGame(_matchId, result);
+        }
+    }
+
     // calculateWinner returns the winner on the given board.
     // The returned winner can be `None` in which case there is no winner and no draw.
     function calculateWinner(uint256 _gameId, uint256 _xCoordinate, uint256 _yCoordinate) public view returns (Winners winner) {
