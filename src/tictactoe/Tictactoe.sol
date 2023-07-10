@@ -52,7 +52,7 @@ contract TicTacToe is TurnBasedGame {
         }
 
         unchecked {
-            uint64 timeUsed = uint64(block.timestamp - matches[_matchId].turnTimePivot);
+            uint40 timeUsed = uint40(block.timestamp - matches[_matchId].turnTimePivot);
 
             if (p1Turn) {
                 if (msg.sender != matches[_matchId].player1) revert MoveProhibited();
@@ -65,7 +65,7 @@ contract TicTacToe is TurnBasedGame {
             }
             matches[_matchId].totalMoved++;
             matches[_matchId].turn = !p1Turn;
-            matches[_matchId].turnTimePivot = uint64(block.timestamp);
+            matches[_matchId].turnTimePivot = uint40(block.timestamp);
 
             emit Move(_matchId, msg.sender, uint8(_xCoordinate), uint8(_yCoordinate), timeUsed);
 
