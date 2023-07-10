@@ -35,17 +35,18 @@ abstract contract TurnBasedGame is OwnableUpgradeable, PausableUpgradeable {
 
     struct MatchData {
         address player1;
-        address player2;
-        uint256 turnTimePivot;
-        uint256 player1TimePool;
-        uint256 player2TimePool;
-        bool turn;
+        uint40 turnTimePivot;
         /*
-            1 - Player 1
-            0 - Player 2
+           1 - Player 1
+           0 - Player 2
         */
+        bool turn;
         DrawOfferState drawOffer;
         MatchResult result;
+        uint16 totalMoved;
+        address player2;
+        uint40 player1TimePool;
+        uint40 player2TimePool;
     }
 
     struct PlayerData {
@@ -165,13 +166,13 @@ abstract contract TurnBasedGame is OwnableUpgradeable, PausableUpgradeable {
     }
 
     function getTurn(uint256 _matchId) public view returns (bool, int256, int256) {
-        int256 timeUsed = int256(block.timestamp) - int256(matches[_matchId].turnTimePivot);
+        int256 timeUsed = int256(block.timestamp) - int256(uint256(matches[_matchId].turnTimePivot));
         return (
             matches[_matchId].turn,
             int256(turnDuration) - timeUsed,
-            int256(matches[_matchId].turn ?
+            int256(uint256(matches[_matchId].turn ?
                 matches[_matchId].player1TimePool :
-                matches[_matchId].player2TimePool) - timeUsed
+                matches[_matchId].player2TimePool)) - timeUsed
         );
     }
 
@@ -179,8 +180,8 @@ abstract contract TurnBasedGame is OwnableUpgradeable, PausableUpgradeable {
         uint256 matchId = ++matchNumber;
 
         matches[matchId].player1 = msg.sender;
-        matches[matchId].player1TimePool = playerTimePool;
-        matches[matchId].player2TimePool = playerTimePool;
+        matches[matchId].player1TimePool = uint40(playerTimePool);
+        matches[matchId].player2TimePool = uint40(playerTimePool);
         matches[matchId].turn = true;
         pendingMatch = matchId;
 
@@ -192,7 +193,7 @@ abstract contract TurnBasedGame is OwnableUpgradeable, PausableUpgradeable {
 
     function joinMatch() virtual internal {
         uint256 matchId = pendingMatch;
-        matches[matchId].turnTimePivot = block.timestamp;
+        matches[matchId].turnTimePivot = uint40(block.timestamp);
         address matchCreator = matches[matchId].player1;
         if ((block.number + block.timestamp) & 1 == 0) {
             matches[matchId].player2 = msg.sender;
