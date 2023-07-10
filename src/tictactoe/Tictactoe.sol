@@ -86,6 +86,13 @@ contract TicTacToe is TurnBasedGame {
         // If so, convert `Players` to `Winners`
         // Subsequently we do the same for columns and diagonals.
         Players[BOARD_SIZE][BOARD_SIZE] memory _board = games[_gameId].board;
+
+        // simulate: check winner before make a move
+        if (_board[_xCoordinate][_yCoordinate] == Players.None) {
+            _board[_xCoordinate][_yCoordinate] = matches[_gameId].turn ? Players.PlayerOne : Players.PlayerTwo;
+        }
+
+        // check winner
         Players player = winnerInRow(_board, _xCoordinate, _yCoordinate);
         if (player == Players.PlayerOne) {
             return Winners.PlayerOne;
