@@ -25,7 +25,6 @@ contract TicTacToe is TurnBasedGame {
     // That means that players are free to fill in any cell at the
     // start of the game.
     struct Game {
-        uint16 totalMoved;
         Players[BOARD_SIZE][BOARD_SIZE] board;
     }
 
@@ -33,7 +32,7 @@ contract TicTacToe is TurnBasedGame {
     // Games that are already over as well as games that are still running.
     // It is possible to iterate over all games, as the keys of the mapping
     // are known to be the integers from `1` to `nrOfGames`.
-    mapping(uint256 => Game) public games;
+    mapping(uint256 => Game) private games;
 
     function initialize(
         uint256 _turnDuration,
@@ -44,7 +43,7 @@ contract TicTacToe is TurnBasedGame {
 
     // makeMove inserts a player on the game board.
     // The player is identified as the sender of the message.
-    function makeMove(uint256 _matchId, uint _xCoordinate, uint _yCoordinate) external notTimeOutMatch(_matchId) notEndedMatch(_matchId) {
+    function makeMove(uint256 _matchId, uint _xCoordinate, uint _yCoordinate, bool _checkWinner) external notTimeOutMatch(_matchId) notEndedMatch(_matchId) {
         Game storage game = games[_matchId];
         bool p1Turn = matches[_matchId].turn;
 
@@ -53,7 +52,7 @@ contract TicTacToe is TurnBasedGame {
         }
 
         unchecked {
-            uint128 timeUsed = uint128(block.timestamp - matches[_matchId].turnTimePivot);
+            uint64 timeUsed = uint64(block.timestamp - matches[_matchId].turnTimePivot);
 
             if (p1Turn) {
                 if (msg.sender != matches[_matchId].player1) revert MoveProhibited();
@@ -64,23 +63,25 @@ contract TicTacToe is TurnBasedGame {
                 matches[_matchId].player2TimePool -= timeUsed;
                 game.board[_xCoordinate][_yCoordinate] = Players.PlayerTwo;
             }
-            game.totalMoved++;
+            matches[_matchId].totalMoved++;
             matches[_matchId].turn = !p1Turn;
-            matches[_matchId].turnTimePivot = block.timestamp;
+            matches[_matchId].turnTimePivot = uint64(block.timestamp);
 
             emit Move(_matchId, msg.sender, uint8(_xCoordinate), uint8(_yCoordinate), timeUsed);
 
-            Winners winner = calculateWinner(_matchId, _xCoordinate, _yCoordinate);
-            if (winner != Winners.None) {
-                MatchResult result = MatchResult(uint8(winner));
-                endGame(_matchId, result);
+            if (_checkWinner) {
+                Winners winner = calculateWinner(_matchId, _xCoordinate, _yCoordinate);
+                if (winner != Winners.None) {
+                    MatchResult result = MatchResult(uint8(winner));
+                    endGame(_matchId, result);
+                }
             }
         }
     }
 
     // calculateWinner returns the winner on the given board.
     // The returned winner can be `None` in which case there is no winner and no draw.
-    function calculateWinner(uint256 _gameId, uint256 _xCoordinate, uint256 _yCoordinate) private view returns (Winners winner) {
+    function calculateWinner(uint256 _gameId, uint256 _xCoordinate, uint256 _yCoordinate) public view returns (Winners winner) {
         // First we check if there is a victory in a row.
         // If so, convert `Players` to `Winners`
         // Subsequently we do the same for columns and diagonals.
@@ -111,7 +112,7 @@ contract TicTacToe is TurnBasedGame {
 
         // If there is no winner and no more space on the board,
         // then it is a draw.
-        if (games[_gameId].totalMoved == uint16(BOARD_SIZE * BOARD_SIZE)) {
+        if (matches[_gameId].totalMoved == uint16(BOARD_SIZE * BOARD_SIZE)) {
             return Winners.Draw;
         }
 
