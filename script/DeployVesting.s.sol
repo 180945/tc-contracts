@@ -42,8 +42,10 @@ contract VestingScript is Script {
 
 contract UpgradeVestingScript is Script {
     address contractVesting;
+    address newImpl;
     function setUp() public {
-        contractVesting = 0xE7143319283D0b5b234AEA046769D40bee5C6D43;
+        contractVesting = 0x43bDa480DE297A14cec95bFb1C6A313615f809Ef;
+        newImpl = 0xe8B280Ebb57bE03adC9d87e207BCD689EfADef96;
     }
 
     function run() public {
@@ -51,8 +53,8 @@ contract UpgradeVestingScript is Script {
         vm.startBroadcast(deployerPrivateKey);
 
         // upgrade contract
-        ITransparentUpgradeableProxy vesting = ITransparentUpgradeableProxy(0x43bDa480DE297A14cec95bFb1C6A313615f809Ef);
-        vesting.upgradeTo(0xe8B280Ebb57bE03adC9d87e207BCD689EfADef96);
+        ITransparentUpgradeableProxy vesting = ITransparentUpgradeableProxy(contractVesting);
+        vesting.upgradeTo(newImpl);
 
         vm.stopBroadcast();
     }
