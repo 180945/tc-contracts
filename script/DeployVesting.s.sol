@@ -39,3 +39,21 @@ contract VestingScript is Script {
         vm.stopBroadcast();
     }
 }
+
+contract UpgradeVestingScript is Script {
+    address contractVesting;
+    function setUp() public {
+        contractVesting = 0xE7143319283D0b5b234AEA046769D40bee5C6D43;
+    }
+
+    function run() public {
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        vm.startBroadcast(deployerPrivateKey);
+
+        // upgrade contract
+        ITransparentUpgradeableProxy vesting = ITransparentUpgradeableProxy(0x43bDa480DE297A14cec95bFb1C6A313615f809Ef);
+        vesting.upgradeTo(0xe8B280Ebb57bE03adC9d87e207BCD689EfADef96);
+
+        vm.stopBroadcast();
+    }
+}
