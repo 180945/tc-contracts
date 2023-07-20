@@ -48,6 +48,7 @@ contract StakingModule is OwnableUpgradeable, ReentrancyGuard, LinkedListLib {
     event UpdateMinStakeAmount(uint);
     event UpdateValidatorList(address[], address[]);
     event Unstake(address, uint, uint);
+    event ClaimTopValidator(address[]);
 
     // @dev error section
     error InvalidStakingAmount();
@@ -67,6 +68,8 @@ contract StakingModule is OwnableUpgradeable, ReentrancyGuard, LinkedListLib {
     error InsufficientBalance();
     error FailedToWithdrawAmount();
     error MustWithdrawToZeroOrLeftAmountGreaterThanMin();
+    error ValidatorsMustNotEmpty();
+    error StakerIsInTopOrNotHaveStakeYet();
 
     function initialize(
         uint256 minStakeAmount_,
@@ -246,13 +249,26 @@ contract StakingModule is OwnableUpgradeable, ReentrancyGuard, LinkedListLib {
     }
 
     /**
-     * @notice Todo: add logic to this function
+     * @notice
      * @dev This will reupdate the top of list staker when some of top staker do
      * unstake and their stake amount not be in top
      * so anyone trigger this function to bring them back to the top
      */
-    function updateTopStaker(address[] memory stakers_) payable external nonReentrant {
+    function claimTopValidator(address[] memory stakers_) payable external nonReentrant {
+        if (stakers_.length == 0) {
+            revert ValidatorsMustNotEmpty();
+        }
 
+        for (var i = 0; i < stakers_.length; i++) {
+            // verify staker not in the top list
+            if (getIdByAddress(stakers_[i]) != 0 || validatorNotInLeaderBoard[stakers_[i]].amount == 0) {
+                revert StakerIsInTopOrNotHaveStakeYet();
+            }
+
+            handleStakeRequest(stakers_[i], 0);
+        }
+
+        emit ClaimTopValidator(stakers_);
     }
     /**
      * @notice Validator withdraw their staked token
