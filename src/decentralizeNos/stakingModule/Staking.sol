@@ -270,6 +270,7 @@ contract StakingModule is OwnableUpgradeable, ReentrancyGuard, LinkedListLib {
 
         emit ClaimTopValidator(stakers_);
     }
+
     /**
      * @notice Validator withdraw their staked token
      * @dev
@@ -309,6 +310,9 @@ contract StakingModule is OwnableUpgradeable, ReentrancyGuard, LinkedListLib {
 
         emit Unstake(staker, block.timestamp, unstakeAmount_);
     }
+
+    // todo cast vote
+    // todo store amount vote at block height
 
     /**
      * @notice Unstaker claim staked token by trigger this function
