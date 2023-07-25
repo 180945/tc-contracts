@@ -259,7 +259,7 @@ contract StakingModule is OwnableUpgradeable, ReentrancyGuard, LinkedListLib {
             revert ValidatorsMustNotEmpty();
         }
 
-        for (var i = 0; i < stakers_.length; i++) {
+        for (uint i = 0; i < stakers_.length; i++) {
             // verify staker not in the top list
             if (getIdByAddress(stakers_[i]) != 0 || validatorNotInLeaderBoard[stakers_[i]].amount == 0) {
                 revert StakerIsInTopOrNotHaveStakeYet();
