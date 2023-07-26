@@ -17,7 +17,9 @@ interface IGamPolicy {
     ) external pure returns (int256, int256);
 
     // @notice this function check how
-    function playersCanMakeMatch(address player1, address player2) external view returns(bool);
+    function playersCanMakeMatch(address player1, int elo1, address player2, int elo2) external view returns(bool);
 
-    // @notice this function evaluate the
+    // @notice this function evaluate the TC max match creator can bet
+    // address 0x00 for native token
+    function maxCanBet(address player, address token, int elo) external view returns(bool);
 }

@@ -14,7 +14,7 @@ contract Register is OwnableUpgradeable {
     }
 
     // @notice this is elo contract to tracking and update user elo information
-    IElo public eloContract;
+    IElo public gameBaseContract;
 
     // event
     // @notice this event emitted when admin register new user to the platform
@@ -44,7 +44,7 @@ contract Register is OwnableUpgradeable {
 
         // request update elo to elo contract
         if (elo > 0) {
-            eloContract.setUserElo(tcAddr, gameType, elo);
+            gameBaseContract.setUserElo(tcAddr, gameType, elo);
         }
 
         emit RegisterAccount(tcAddr, gameType, username, elo);
@@ -54,4 +54,10 @@ contract Register is OwnableUpgradeable {
     function checkUserRegister(address account, uint gameType) public view returns(bool) {
         return bytes(gamers[account][gameType].username).length > 0;
     }
+
+    // @notice update game base contract
+    function setGameBase(IElo gameBase_) external onlyOwner {
+        gameBaseContract = gameBase_;
+    }
+
 }
