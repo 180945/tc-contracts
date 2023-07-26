@@ -32,6 +32,7 @@ contract GameBase is OwnableUpgradeable {
     event JoinMatch(uint256 indexed matchId, address player, string pubkey);
     event ResultSubmitted(uint256 indexed matchId, MatchResult indexed result, address player);
     event EloUpdate(address indexed player, int256 oldElo, int256 newElo);
+    event MatchElo(address indexed player1, int256 elo1, address indexed player2, int256 elo1);
 
     // @notice this event emitted when player claim their token from protocol
     event Claim(address, uint);
@@ -128,6 +129,9 @@ contract GameBase is OwnableUpgradeable {
     struct PlayerData {
         // total tc balance of player
         uint balance;
+        // total match joined
+        // todo: update this value
+        uint matches;
         // tracking state of user for each game
         // game type => player game state
         mapping(uint40 => PlayerGameState) playerStates;
@@ -183,7 +187,8 @@ contract GameBase is OwnableUpgradeable {
     // @notice player call this function to create new match
     function createMatch(uint40 gameType, uint minBet, uint maxBet, uint startTime) payable external mustAvailableToJoin(gameType) {
         // check elo calculation contract is set
-        require(games[gameType] != address(0) && maxBet >= minBet, "GB: game not exist or invalid input");
+        IGamPolicy game = IGamPolicy(games[uint(gameType)]);
+        require(address(game) != address(0) && maxBet >= minBet, "GB: game not exist or invalid input");
         address player = msg.sender;
         uint betAmount = msg.value + players[player].balance;
         // check attached value with input max bet
@@ -193,7 +198,8 @@ contract GameBase is OwnableUpgradeable {
         // update total match and new id
         uint256 matchId = ++totalMatch;
 
-        // todo: check game policy
+        // validate amount max bet user can make
+        require(game.maxCanBet(player, address(0), getEloByGameType(player, gameType)) <= maxBet, "GB: exceeded max bet");
 
         // update user balance
         unchecked {
@@ -241,7 +247,13 @@ contract GameBase is OwnableUpgradeable {
         require(uint256(matchData.startTime) > block.timestamp, "GB: this game started");
         require(msg.sender != matchData.player1, "GB: can not join as player 2");
 
-        // todo: check game policy
+        // check game policy
+        require(IGamPolicy(games[matchData.gameType]).playersCanMakeMatch(
+            matchData.player1,
+            getEloByGameType(matchData.player1, matchData.gameType),
+            matchData.player2,
+            getEloByGameType(matchData.player2, matchData.gameType)
+        ), "GB: can not join this match");
 
         // check value in tx in range
         address player = msg.sender;
@@ -396,7 +408,21 @@ contract GameBase is OwnableUpgradeable {
             players[owner()].balance += penaltyAmount;
         }
 
-        // todo: update elo
+        // update player elo
+        (
+         int elo1,
+         int elo2
+        ) = IGamPolicy(games[matchData.gameType]).getNewElo(
+            getEloByGameType(matchData.player1, matchData.gameType),
+            getEloByGameType(matchData.player2, matchData.gameType),
+            players[matchData.player1].matches,
+            players[matchData.player2].matches,
+            int(uint(matchResult)) - int(uint(MatchState.MATCH_DRAW))
+        );
+
+        emit MatchElo(matchData.player1, elo1, matchData.player1, elo2);
+        players[matchData.player1].playerStates[matchData.gameType].elo = elo1;
+        players[matchData.player2].playerStates[matchData.gameType].elo = elo2;
 
         // update match state
         matchData.matchState = matchResult;

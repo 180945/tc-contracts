@@ -5,6 +5,7 @@ import "forge-std/Script.sol";
 import "../src/gamePlatform/Register.sol";
 import "../src/gamePlatform/GameBase.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import "../src/gamePlatform/ttt/ttt.sol";
 
 contract DeployGameBase is Script {
     address upgradeAddress;
@@ -55,8 +56,13 @@ contract DeployGameBase is Script {
 
         register.setGameBase(IElo(address(gameBase)));
 
+        // new game
+        TTT newGame = new TTT();
+        gameBase.registerGame(0, address(newGame));
+
         console.log("deploy register contract  %s", address(register));
         console.log("deploy game base contract  %s", address(gameBase));
+        console.log("deploy ttt game contract  %s", address(newGame));
 
         vm.stopBroadcast();
     }
