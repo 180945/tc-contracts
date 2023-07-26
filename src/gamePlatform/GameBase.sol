@@ -90,6 +90,14 @@ contract GameBase is OwnableUpgradeable {
         MATCH_DRAW
     }
 
+    // which is submitted by player before match started
+    struct DataSubmitted {
+        uint betAmount;
+        string player2PubKey;
+        string inviteLink;
+        string liveLink;
+    }
+
     struct MatchData {
         address player1;
         MatchResult player1SummitResult;
@@ -101,10 +109,7 @@ contract GameBase is OwnableUpgradeable {
         MatchState matchState;
         uint128 minBet;
         uint128 maxBet;
-        uint betAmount;
-        string player2PubKey;
-        string inviteLink;
-        string liveLink;
+        DataSubmitted data;
         GameConfig matchConfig;
     }
 
@@ -224,10 +229,10 @@ contract GameBase is OwnableUpgradeable {
         }
 
         // update match data
-        matchData.betAmount = msg.value;
+        matchData.data.betAmount = betInput;
         matchData.matchState = MatchState.WAITING_INVITATION;
         matchData.lastTimestamp = uint48(block.timestamp);
-        matchData.player2PubKey = publicKey;
+        matchData.data.player2PubKey = publicKey;
         matchData.player2 = player;
 
         // update player state
@@ -247,7 +252,7 @@ contract GameBase is OwnableUpgradeable {
         require(matchData.player1 == msg.sender, "GB: unauthorized");
 
         // update storage
-        matchData.inviteLink = inviteLink;
+        matchData.data.inviteLink = inviteLink;
         matchData.matchState = MatchState.WAITING_CONFIRM_JOIN;
 
         emit MatchStateUpdate(matchId, MatchState.WAITING_CONFIRM_JOIN);
@@ -264,7 +269,7 @@ contract GameBase is OwnableUpgradeable {
         // update storage
         matchData.matchState = MatchState.REJECT_TO_JOIN_GAME;
         players[matchData.player1].balance += matchData.maxBet;
-        players[matchData.player2].balance += matchData.betAmount;
+        players[matchData.player2].balance += matchData.data.betAmount;
         players[matchData.player1].playerStates[matchData.gameType].playerState = PlayerState.DEFAULT;
         players[matchData.player2].playerStates[matchData.gameType].playerState = PlayerState.DEFAULT;
 
@@ -281,7 +286,7 @@ contract GameBase is OwnableUpgradeable {
 
         // update storage
         matchData.matchState = MatchState.LIVE_LINK_SUBMITTED;
-        matchData.liveLink = liveLink;
+        matchData.data.liveLink = liveLink;
 
         emit MatchStateUpdate(matchId, MatchState.LIVE_LINK_SUBMITTED);
     }
