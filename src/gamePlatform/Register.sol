@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import {OwnableUpgradeable} from "@openzeppelin-upgradeable/contracts/access/OwnableUpgradeable.sol";
 
 interface IElo {
-    function setUserElo(address tcAddr, uint gameType, uint elo) external;
+    function setUserElo(address tcAddr, uint gameType, int elo) external;
 }
 
 contract Register is OwnableUpgradeable {
@@ -18,7 +18,7 @@ contract Register is OwnableUpgradeable {
 
     // event
     // @notice this event emitted when admin register new user to the platform
-    event RegisterAccount(address,uint,string);
+    event RegisterAccount(address,uint,string,int);
 
     /**
       * @notice This data tracking user info which updated by admin
@@ -32,7 +32,7 @@ contract Register is OwnableUpgradeable {
     }
 
     // @dev admin call this function to register user to the game platform
-    function register(address tcAddr, uint gameType, string calldata username, uint elo) external onlyOwner {
+    function register(address tcAddr, uint gameType, string calldata username, int elo) external onlyOwner {
         // validate input
         require(bytes(username).length > 0 && tcAddr != address(0) && gameType > 0, "Register: invalid input data");
 
@@ -47,7 +47,7 @@ contract Register is OwnableUpgradeable {
             eloContract.setUserElo(tcAddr, gameType, elo);
         }
 
-        emit RegisterAccount(tcAddr, gameType, username);
+        emit RegisterAccount(tcAddr, gameType, username, elo);
     }
 
     // @notice this function used by internal/external contract to check user must be registered before doing anything
