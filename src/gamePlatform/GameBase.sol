@@ -22,6 +22,9 @@ contract GameBase is OwnableUpgradeable {
     // @notice this event emitted when admin register new user to the platform
     event NewRegister(Register, Register);
 
+    // @notice this event emitted when admin add/remove match resolver to contract
+    event UpdateResolver(address, bool);
+
     // @notice emitted when new match created
     event MatchCreation(uint256 indexed matchId, address indexed player, uint gameType, uint minBet, uint maxBet, uint startTime);
     event MatchCancellation(uint256 indexed matchId, address indexed player);
@@ -29,6 +32,9 @@ contract GameBase is OwnableUpgradeable {
     event JoinMatch(uint256 indexed matchId, address player, string pubkey);
     event MatchEnd(uint256 indexed matchId, MatchResult indexed result);
     event EloUpdate(address indexed player, int256 oldElo, int256 newElo);
+
+    // @notice this event emitted when player claim their token from protocol
+    event Claim(address, uint);
 
     // STORAGE LAYOUT
 
@@ -88,6 +94,12 @@ contract GameBase is OwnableUpgradeable {
         PLAYER_1_WIN,
         PLAYER_2_WIN,
         MATCH_DRAW
+    }
+
+    struct Fault {
+        bool detected;
+        // true is player 1, false is player 2
+        bool isPlayer1;
     }
 
     // which is submitted by player before match started
@@ -171,6 +183,8 @@ contract GameBase is OwnableUpgradeable {
         // update total match and new id
         uint256 matchId = ++totalMatch;
 
+        // todo: check game policy
+
         // update user balance
         unchecked {
             players[player].balance = betAmount - maxBet;
@@ -217,6 +231,8 @@ contract GameBase is OwnableUpgradeable {
         require(uint256(matchData.startTime) > block.timestamp, "GB: this game started");
         require(msg.sender != matchData.player1, "GB: can not join as player 2");
 
+        // todo: check game policy
+
         // check value in tx in range
         address player = msg.sender;
         uint betAmount = msg.value + players[player].balance;
@@ -254,6 +270,7 @@ contract GameBase is OwnableUpgradeable {
         // update storage
         matchData.data.inviteLink = inviteLink;
         matchData.matchState = MatchState.WAITING_CONFIRM_JOIN;
+        matchData.lastTimestamp = uint48(block.timestamp);
 
         emit MatchStateUpdate(matchId, MatchState.WAITING_CONFIRM_JOIN);
     }
@@ -287,6 +304,7 @@ contract GameBase is OwnableUpgradeable {
         // update storage
         matchData.matchState = MatchState.LIVE_LINK_SUBMITTED;
         matchData.data.liveLink = liveLink;
+        matchData.lastTimestamp = uint48(block.timestamp);
 
         emit MatchStateUpdate(matchId, MatchState.LIVE_LINK_SUBMITTED);
     }
@@ -307,7 +325,6 @@ contract GameBase is OwnableUpgradeable {
 
     // @notice match creator reject join match. This will lead to need resolver jump in
     function rejectLiveMatch(uint matchId) external requireMatchState(matchId, MatchState.LIVE_LINK_SUBMITTED) {
-        // check this game started so must it must closed
         MatchData storage matchData = matches[matchId];
         require(block.timestamp - uint256(matchData.lastTimestamp) <= matchData.matchConfig.timeBuffer, "GB: timeout");
 
@@ -320,9 +337,54 @@ contract GameBase is OwnableUpgradeable {
         emit MatchStateUpdate(matchId, MatchState.DISPUTE_OCCURRED);
     }
 
+    // @note add resolver
+    function addResolver(address resolver_, bool updateFlag_) external onlyOwner {
+        require(resolver_ != address(0) && resolvers[resolver_] != updateFlag_, "GB: invalid resolver");
+
+        resolvers[resolver_] = updateFlag_;
+
+        emit UpdateResolver(resolver_, updateFlag_);
+    }
+
     // @notice THIS SECTION DEFINE HOW GAME END AND AMOUNT EARNED
 
+    // @notice admin resolve dispute matches
+    function resolveMatch(uint matchId, MatchState matchResult, Fault calldata fault) external requireMatchState(matchId, MatchState.DISPUTE_OCCURRED) {
+        require(resolvers[msg.sender], "GB: unauthorized");
+        require(uint8(matchResult) > uint8(MatchState.GAME_CLOSED), "GB:result must be win-draw state");
 
+        MatchData storage matchData = matches[matchId];
+        if (matchResult == MatchState.PLAYER_1_WIN) {
+            // update player 1 balance
+        } else if (matchResult == MatchState.PLAYER_2_WIN) {
+            // update player 2 balance
+
+            // update player 1 balance
+        } else {
+
+        }
+        matchData.matchState = matchResult;
+
+        emit MatchStateUpdate(matchId, matchResult);
+    }
+
+    // @notice player submit match result
+
+    // @notice match timeout so trigger this function to claim as winner
+
+    // @notice player claim TC
+    function claim(uint amount_) external {
+        uint availableAmount = players[msg.sender].balance;
+        if (amount_ <= availableAmount) {
+            unchecked {
+                players[msg.sender].balance -= amount_;
+            }
+            (bool success,) = msg.sender.call{value: amount_}("");
+            require(success, "GB: claim failed");
+
+            emit Claim(msg.sender, amount_);
+        }
+    }
 
     // @dev admin call this function to update register contract address
     function updateRegisterContract(Register newRegister) external onlyOwner {
@@ -375,9 +437,6 @@ contract GameBase is OwnableUpgradeable {
 
         emit InitElo(tcAddr, gameType, elo);
     }
-
-
-    // Getters
 
     // @dev return elo of user based on game type
     function getEloByGameType(address tcAddr, uint40 gameType) external view returns(int) {
