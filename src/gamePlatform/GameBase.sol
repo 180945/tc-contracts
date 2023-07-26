@@ -582,7 +582,17 @@ contract GameBase is OwnableUpgradeable {
     }
 
     // @dev return elo of user based on game type
-    function getEloByGameType(address tcAddr, uint40 gameType) external view returns(int) {
+    function getEloByGameType(address tcAddr, uint40 gameType) public view returns(int) {
         return players[tcAddr].playerStates[gameType].elo;
+    }
+
+    // @dev return gamer info
+    function getAccountInfo(address tcAddr, uint40 gameType) external view returns(string memory, int, uint, bool) {
+        if  (!register.checkUserRegister(tcAddr, gameType) || games[gameType] == address(0)) {
+            return ("", 0, 0, false);
+        }
+
+        int playerElo = getEloByGameType(tcAddr, gameType);
+        return (register.getUserName(tcAddr, gameType), playerElo, IGamPolicy(games[gameType]).maxCanBet(tcAddr, address(0), playerElo), true);
     }
 }

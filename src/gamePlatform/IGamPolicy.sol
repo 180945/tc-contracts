@@ -21,5 +21,5 @@ interface IGamPolicy {
 
     // @notice this function evaluate the TC max match creator can bet
     // address 0x00 for native token
-    function maxCanBet(address player, address token, int elo) external view returns(bool);
+    function maxCanBet(address player, address token, int elo) external view returns(uint);
 }

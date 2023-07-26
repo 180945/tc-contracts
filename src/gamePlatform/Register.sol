@@ -60,4 +60,9 @@ contract Register is OwnableUpgradeable {
         gameBaseContract = gameBase_;
     }
 
+    // @notice get account info
+    function getUserName(address account, uint gameType) public view returns(string memory) {
+        return gamers[account][gameType].username;
+    }
+
 }
