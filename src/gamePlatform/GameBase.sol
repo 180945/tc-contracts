@@ -25,6 +25,8 @@ contract GameBase is OwnableUpgradeable {
     // @notice this event emitted when admin add/remove match resolver to contract
     event UpdateResolver(address, bool);
 
+    event NewGameConfig(GameConfig);
+
     // @notice emitted when new match created
     event MatchCreation(uint256 indexed matchId, address indexed player, uint gameType, uint minBet, uint maxBet, uint startTime);
     event MatchCancellation(uint256 indexed matchId, address indexed player);
@@ -32,7 +34,8 @@ contract GameBase is OwnableUpgradeable {
     event JoinMatch(uint256 indexed matchId, address player, string pubkey);
     event ResultSubmitted(uint256 indexed matchId, MatchResult indexed result, address player);
     event EloUpdate(address indexed player, int256 oldElo, int256 newElo);
-    event MatchElo(address indexed player1, int256 elo1, address indexed player2, int256 elo1);
+    event MatchElo(address indexed player1, int256 elo1, address indexed player2, int256 elo2);
+    event MatchLiveLinkSubmitted(uint256 indexed matchId, address indexed player, string liveLink);
 
     // @notice this event emitted when player claim their token from protocol
     event Claim(address, uint);
@@ -91,6 +94,8 @@ contract GameBase is OwnableUpgradeable {
         LIVE_LINK_SUBMITTED, // B submit link live and wait A confirm link is valid
         MATCH_STARTED, // A accept match and game start
         DISPUTE_OCCURRED, // admin jump in to resolve dispute between user
+        PLAYER_1_TIMEOUT, // not follow game rule in time
+        PLAYER_2_TIMEOUT, // not follow game rule in time
         GAME_CLOSED, // no-one join game @notice this param used in some functions, dont change the order
         PLAYER_1_WIN,
         MATCH_DRAW,
@@ -173,7 +178,7 @@ contract GameBase is OwnableUpgradeable {
     }
 
     function initialize(address admin_, Register register_, GameConfig calldata initConfig_) external initializer {
-        require(initConfig_.serviceFee < UPPER_BOUND && initConfig_.faultCharge < UPPER_BOUND, "GB: invalid config");
+        require(initConfig_.serviceFee + initConfig_.faultCharge <= UPPER_BOUND, "GB: invalid config");
 
         _transferOwnership(admin_);
         register = register_;
@@ -333,6 +338,7 @@ contract GameBase is OwnableUpgradeable {
         matchData.data.liveLink = liveLink;
         matchData.lastTimestamp = uint48(block.timestamp);
 
+        emit MatchLiveLinkSubmitted(matchId, msg.sender, liveLink);
         emit MatchStateUpdate(matchId, MatchState.LIVE_LINK_SUBMITTED);
     }
 
@@ -377,7 +383,9 @@ contract GameBase is OwnableUpgradeable {
 
     // @notice internal logic to handle game result
     function _handleResult(uint matchId, MatchState matchResult, Fault memory fault) internal {
-        require(uint8(matchResult) > uint8(MatchState.GAME_CLOSED), "GB:result must be win-draw state");
+        require(uint8(matchResult) > uint8(MatchState.GAME_CLOSED) ||
+            matchResult == MatchState.PLAYER_1_TIMEOUT ||
+            matchResult == MatchState.PLAYER_2_TIMEOUT, "GB:result must be win-draw state");
 
         MatchData storage matchData = matches[matchId];
         uint penaltyAmount = matchData.data.betAmount * uint(matchData.matchConfig.faultCharge) / uint(UPPER_BOUND);
@@ -391,6 +399,16 @@ contract GameBase is OwnableUpgradeable {
             // update player 2 balance
             players[matchData.player2].balance += 2 * matchData.data.betAmount - penaltyAmount;
             players[matchData.player1].balance += uint(matchData.maxBet) - matchData.data.betAmount + penaltyAmount;
+            players[owner()].balance += serviceFeeAmount;
+        } else if (matchResult == MatchState.PLAYER_1_TIMEOUT) {
+            // @notice handle timeouts
+            // player who does not take action in time will be charged faulty penalty amount and service fee
+            players[matchData.player2].balance += matchData.data.betAmount + penaltyAmount;
+            players[matchData.player1].balance += uint(matchData.maxBet) - penaltyAmount - serviceFeeAmount;
+            players[owner()].balance += serviceFeeAmount;
+        } else if (matchResult == MatchState.PLAYER_2_TIMEOUT) {
+            players[matchData.player2].balance += matchData.data.betAmount - penaltyAmount - serviceFeeAmount;
+            players[matchData.player1].balance += uint(matchData.maxBet) + penaltyAmount;
             players[owner()].balance += serviceFeeAmount;
         } else {
             // game draw
@@ -515,14 +533,14 @@ contract GameBase is OwnableUpgradeable {
 
         // these are state win for B
         if (matchData.matchState == MatchState.WAITING_INVITATION || matchData.matchState == MatchState.LIVE_LINK_SUBMITTED) {
-            _handleResult(matchId, MatchState.PLAYER_2_WIN, Fault(false, false));
+            _handleResult(matchId, MatchState.PLAYER_1_TIMEOUT, Fault(false, false));
 
-            emit MatchStateUpdate(matchId, MatchState.PLAYER_2_WIN);
+            emit MatchStateUpdate(matchId, MatchState.PLAYER_1_TIMEOUT);
             return;
         } else if(matchData.matchState == MatchState.WAITING_CONFIRM_JOIN) {
-            _handleResult(matchId, MatchState.PLAYER_1_WIN, Fault(false, false));
+            _handleResult(matchId, MatchState.PLAYER_2_TIMEOUT, Fault(false, false));
 
-            emit MatchStateUpdate(matchId, MatchState.PLAYER_1_WIN);
+            emit MatchStateUpdate(matchId, MatchState.PLAYER_2_TIMEOUT);
             return;
         }
 
@@ -532,8 +550,8 @@ contract GameBase is OwnableUpgradeable {
             uint8(matchData.player2SummitResult) * uint8(matchData.player1SummitResult) == 0 &&
             matchData.player2SummitResult != matchData.player1SummitResult
         ) {
-            MatchResult result = matchData.player1SummitResult != MatchResult.PLAYING ? matchData.player1SummitResult : matchData.player2SummitResult;
-            MatchState matchResult = MatchState(uint8(result) + uint8(MatchState.GAME_CLOSED));
+            MatchState matchResult = matchData.player1SummitResult == MatchResult.PLAYING ? MatchState.PLAYER_1_TIMEOUT : MatchState.PLAYER_2_TIMEOUT;
+
             _handleResult(matchId, matchResult, Fault(false, false));
             emit MatchStateUpdate(matchId, matchResult);
         }
@@ -589,6 +607,15 @@ contract GameBase is OwnableUpgradeable {
         games[gameType] = newEloCalculationContract;
 
         emit UpdateGame(gameType, newEloCalculationContract);
+    }
+
+    // @dev new game config
+    function newConfig(GameConfig calldata newConfig_) external onlyOwner {
+        require(newConfig_.serviceFee + newConfig_.faultCharge <= UPPER_BOUND, "GB: invalid config");
+
+        gameConfig = newConfig_;
+
+        emit NewGameConfig(newConfig_);
     }
 
     // @dev update user elo at init. Only called by register contract
