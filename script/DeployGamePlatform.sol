@@ -58,7 +58,10 @@ contract DeployGameBase is Script {
 
         // new game
         TTT newGame = new TTT();
-        gameBase.registerGame(0, address(newGame));
+        gameBase.registerGame(1, address(newGame));
+
+//        register.register(0xbad9221EA6F733ea38B48C3FA19552755e7719e0, 1, "leon1", int(1500));
+//        register.register(0xF0a391886410ecF0F03951D26f89b792cf0761Da, 1, "leon2", int(1500));
 
         console.log("deploy register contract  %s", address(register));
         console.log("deploy game base contract  %s", address(gameBase));

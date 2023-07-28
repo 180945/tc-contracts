@@ -223,6 +223,7 @@ contract GameBase is OwnableUpgradeable {
         // update player state for this game
         players[player].playerStates[gameType].playerState = PlayerState.PLAYING;
 
+        emit MatchStateUpdate(matchId, MatchState.WAITING_OPPONENT);
         emit MatchCreation(matchId, player, gameType, minBet, maxBet, startTime);
     }
 
@@ -237,6 +238,7 @@ contract GameBase is OwnableUpgradeable {
         // update player state for this game
         players[matches[matchId].player1].playerStates[uint40(gameType)].playerState = PlayerState.DEFAULT;
 
+        emit MatchStateUpdate(matchId, MatchState.GAME_CLOSED);
         emit MatchCancellation(matchId, msg.sender);
     }
 
@@ -389,7 +391,7 @@ contract GameBase is OwnableUpgradeable {
 
         MatchData storage matchData = matches[matchId];
         uint penaltyAmount = matchData.data.betAmount * uint(matchData.matchConfig.faultCharge) / uint(UPPER_BOUND);
-        uint serviceFeeAmount = (matchData.data.betAmount - penaltyAmount) * 2 * uint(matchData.matchConfig.serviceFee) / uint(UPPER_BOUND);
+        uint serviceFeeAmount = (matchData.data.betAmount * uint(matchData.matchConfig.serviceFee) / uint(UPPER_BOUND)) * 2;
         if (matchResult == MatchState.PLAYER_1_WIN) {
             // update player 1 balance
             players[matchData.player2].balance += penaltyAmount;
@@ -397,19 +399,19 @@ contract GameBase is OwnableUpgradeable {
             players[owner()].balance += serviceFeeAmount;
         } else if (matchResult == MatchState.PLAYER_2_WIN) {
             // update player 2 balance
-            players[matchData.player2].balance += 2 * matchData.data.betAmount - penaltyAmount;
+            players[matchData.player2].balance += 2 * matchData.data.betAmount - penaltyAmount - serviceFeeAmount;
             players[matchData.player1].balance += uint(matchData.maxBet) - matchData.data.betAmount + penaltyAmount;
             players[owner()].balance += serviceFeeAmount;
         } else if (matchResult == MatchState.PLAYER_1_TIMEOUT) {
             // @notice handle timeouts
             // player who does not take action in time will be charged faulty penalty amount and service fee
             players[matchData.player2].balance += matchData.data.betAmount + penaltyAmount;
-            players[matchData.player1].balance += uint(matchData.maxBet) - penaltyAmount - serviceFeeAmount;
-            players[owner()].balance += serviceFeeAmount;
+            players[matchData.player1].balance += uint(matchData.maxBet) - penaltyAmount - serviceFeeAmount / 2;
+            players[owner()].balance += serviceFeeAmount / 2;
         } else if (matchResult == MatchState.PLAYER_2_TIMEOUT) {
-            players[matchData.player2].balance += matchData.data.betAmount - penaltyAmount - serviceFeeAmount;
+            players[matchData.player2].balance += matchData.data.betAmount - penaltyAmount - serviceFeeAmount / 2;
             players[matchData.player1].balance += uint(matchData.maxBet) + penaltyAmount;
-            players[owner()].balance += serviceFeeAmount;
+            players[owner()].balance += serviceFeeAmount / 2;
         } else {
             // game draw
             _drawGame(matchData);
@@ -585,7 +587,7 @@ contract GameBase is OwnableUpgradeable {
 
     // @dev admin call this function to register game elo calculation
     function registerGame(uint gameType, address newEloCalculationContract) external onlyOwner {
-        require(games[gameType] == address(0), "GameBase: game registered");
+        require(games[gameType] == address(0) && gameType > 0, "GameBase: game registered");
 
         // sanity check
         IGamPolicy(newEloCalculationContract).getNewElo(0, 0, 0, 0, 0);
