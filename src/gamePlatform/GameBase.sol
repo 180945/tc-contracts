@@ -31,7 +31,7 @@ contract GameBase is OwnableUpgradeable {
     event MatchCreation(uint256 indexed matchId, address indexed player, uint gameType, uint minBet, uint maxBet, uint startTime);
     event MatchCancellation(uint256 indexed matchId, address indexed player);
     event MatchStateUpdate(uint256 indexed matchId, MatchState state);
-    event JoinMatch(uint256 indexed matchId, address player, string pubkey);
+    event JoinMatch(uint256 indexed matchId, address player, string pubkey, uint betAmount);
     event ResultSubmitted(uint256 indexed matchId, MatchResult indexed result, address player);
     event EloUpdate(address indexed player, int256 oldElo, int256 newElo);
     event MatchElo(address indexed player1, int256 elo1, address indexed player2, int256 elo2);
@@ -283,7 +283,7 @@ contract GameBase is OwnableUpgradeable {
         players[player].playerStates[matchData.gameType].playerState = PlayerState.PLAYING;
 
         // emit event before tx ended
-        emit JoinMatch(matchId, player, publicKey);
+        emit JoinMatch(matchId, player, publicKey, betAmount);
         emit MatchStateUpdate(matchId, MatchState.WAITING_INVITATION);
     }
 
