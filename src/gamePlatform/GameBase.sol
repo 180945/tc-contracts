@@ -135,7 +135,6 @@ contract GameBase is OwnableUpgradeable {
         // total tc balance of player
         uint balance;
         // total match joined
-        // todo: update this value
         uint matches;
         // tracking state of user for each game
         // game type => player game state
@@ -304,12 +303,6 @@ contract GameBase is OwnableUpgradeable {
         emit MatchStateUpdate(matchId, MatchState.WAITING_CONFIRM_JOIN);
     }
 
-    // @notice handle draw game internally
-    function _drawGame(MatchData memory matchData) internal {
-        players[matchData.player1].balance += matchData.maxBet;
-        players[matchData.player2].balance += matchData.data.betAmount;
-    }
-
     // @notice player 2 submit reject match
     function rejectMatch(uint matchId) external requireMatchState(matchId, MatchState.WAITING_CONFIRM_JOIN) {
         MatchData storage matchData = matches[matchId];
@@ -320,7 +313,7 @@ contract GameBase is OwnableUpgradeable {
 
         // update storage
         matchData.matchState = MatchState.REJECT_TO_JOIN_GAME;
-        _drawGame(matchData);
+        _matchDraw(matchData);
         players[matchData.player1].playerStates[matchData.gameType].playerState = PlayerState.DEFAULT;
         players[matchData.player2].playerStates[matchData.gameType].playerState = PlayerState.DEFAULT;
 
@@ -383,6 +376,12 @@ contract GameBase is OwnableUpgradeable {
 
     // @notice THIS SECTION DEFINE HOW GAME END AND AMOUNT EARNED
 
+    // @notice handle draw game internally
+    function _matchDraw(MatchData memory matchData) internal {
+        players[matchData.player1].balance += matchData.maxBet;
+        players[matchData.player2].balance += matchData.data.betAmount;
+    }
+    
     // @notice internal logic to handle game result
     function _handleResult(uint matchId, MatchState matchResult, Fault memory fault) internal {
         require(uint8(matchResult) > uint8(MatchState.GAME_CLOSED) ||
@@ -414,7 +413,13 @@ contract GameBase is OwnableUpgradeable {
             players[owner()].balance += serviceFeeAmount / 2;
         } else {
             // game draw
-            _drawGame(matchData);
+            _matchDraw(matchData);
+        }
+
+        // update match players competed
+        if (uint8(matchResult) > uint8(MatchState.GAME_CLOSED)) {
+            players[matchData.player1].matches++;
+            players[matchData.player2].matches++;
         }
 
         // check fault is detected
