@@ -203,7 +203,7 @@ contract GameBase is OwnableUpgradeable {
         uint256 matchId = ++totalMatch;
 
         // validate amount max bet user can make
-        require(game.maxCanBet(player, address(0), getEloByGameType(player, gameType)) <= maxBet, "GB: exceeded max bet");
+        require(game.maxCanBet(player, address(0), getEloByGameType(player, gameType)) >= maxBet, "GB: exceeded max bet");
 
         // update user balance
         unchecked {
