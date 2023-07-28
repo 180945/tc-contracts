@@ -291,6 +291,7 @@ contract GameBase is OwnableUpgradeable {
     function submitInviteLink(uint matchId, string calldata inviteLink) external requireMatchState(matchId, MatchState.WAITING_INVITATION) {
         MatchData storage matchData = matches[matchId];
         require(block.timestamp - uint256(matchData.lastTimestamp) <= matchData.matchConfig.timeBuffer, "GB: timeout");
+        require(block.timestamp >= matchData.startTime, "GB: game not start yet");
 
         // only player 1 of this match can call this function
         require(matchData.player1 == msg.sender, "GB: unauthorized");
@@ -535,11 +536,20 @@ contract GameBase is OwnableUpgradeable {
             return;
         }
 
+        // do nothing when the match is not started
+        if (block.timestamp <= uint256(matchData.startTime)) {
+            return;
+        }
+
         // handle case someone join game
         require(block.timestamp - uint256(matchData.lastTimestamp) > matchData.matchConfig.timeBuffer, "GB: 1 not timeout yet");
 
         // these are state win for B
         if (matchData.matchState == MatchState.WAITING_INVITATION || matchData.matchState == MatchState.LIVE_LINK_SUBMITTED) {
+            if (matchData.matchState == MatchState.WAITING_INVITATION) {
+                require(block.timestamp - uint256(matchData.startTime) > matchData.matchConfig.timeBuffer, "GB: 1 not timeout yet");
+            }
+
             _handleResult(matchId, MatchState.PLAYER_1_TIMEOUT, Fault(false, false));
 
             emit MatchStateUpdate(matchId, MatchState.PLAYER_1_TIMEOUT);
