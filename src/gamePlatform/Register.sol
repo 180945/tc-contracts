@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import {OwnableUpgradeable} from "@openzeppelin-upgradeable/contracts/access/OwnableUpgradeable.sol";
 
 interface IElo {
-    function setUserElo(address tcAddr, uint gameType, int elo) external;
+    function setUserElo(address tcAddr, uint40 gameType, int elo) external;
 }
 
 contract Register is OwnableUpgradeable {
@@ -44,7 +44,7 @@ contract Register is OwnableUpgradeable {
 
         // request update elo to elo contract
         if (elo > 0) {
-            gameBaseContract.setUserElo(tcAddr, gameType, elo);
+            gameBaseContract.setUserElo(tcAddr, uint40(gameType), elo);
         }
 
         emit RegisterAccount(tcAddr, gameType, username, elo);
