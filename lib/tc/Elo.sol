@@ -20,7 +20,7 @@ library Elo {
         uint256 _matchCount1,
         uint256 _matchCount2,
         int256 _matchResult
-    ) internal pure returns (int256, int256) {
+    ) public pure returns (int256, int256) {
         (SD59x18 score1, SD59x18 score2) = getScore(_matchResult);
 
         return getNewElo(_elo1, _elo2, _matchCount1, _matchCount2, score1, score2);
