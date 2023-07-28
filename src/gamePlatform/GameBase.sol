@@ -556,6 +556,8 @@ contract GameBase is OwnableUpgradeable {
 
             _handleResult(matchId, matchResult, Fault(false, false));
             emit MatchStateUpdate(matchId, matchResult);
+
+            return;
         }
 
         revert("GB: invalid state");
