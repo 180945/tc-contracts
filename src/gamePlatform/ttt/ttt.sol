@@ -37,7 +37,7 @@ contract TTT {
             eloGap = -eloGap;
         }
 
-        return eloGap < 200;
+        return eloGap < int(200);
     }
 
     // @notice this function evaluate the TC max match creator can bet

@@ -25,14 +25,14 @@ contract Register is OwnableUpgradeable {
       * @dev tracking account => game type => gamer info
       * elo will query to
       */
-    mapping(address => mapping(uint => GamerInfo)) public gamers;
+    mapping(address => mapping(uint40 => GamerInfo)) public gamers;
 
     function initialize(address admin_) external initializer {
         _transferOwnership(admin_);
     }
 
     // @dev admin call this function to register user to the game platform
-    function register(address tcAddr, uint gameType, string calldata username, int elo) external onlyOwner {
+    function register(address tcAddr, uint40 gameType, string calldata username, int elo) external onlyOwner {
         // validate input
         require(bytes(username).length > 0 && tcAddr != address(0) && gameType > 0, "Register: invalid input data");
 
@@ -44,14 +44,14 @@ contract Register is OwnableUpgradeable {
 
         // request update elo to elo contract
         if (elo > 0) {
-            gameBaseContract.setUserElo(tcAddr, uint40(gameType), elo);
+            gameBaseContract.setUserElo(tcAddr, gameType, elo);
         }
 
         emit RegisterAccount(tcAddr, gameType, username, elo);
     }
 
     // @notice this function used by internal/external contract to check user must be registered before doing anything
-    function checkUserRegister(address account, uint gameType) public view returns(bool) {
+    function checkUserRegister(address account, uint40 gameType) public view returns(bool) {
         return bytes(gamers[account][gameType].username).length > 0;
     }
 
@@ -61,7 +61,7 @@ contract Register is OwnableUpgradeable {
     }
 
     // @notice get account info
-    function getUserName(address account, uint gameType) public view returns(string memory) {
+    function getUserName(address account, uint40 gameType) public view returns(string memory) {
         return gamers[account][gameType].username;
     }
 

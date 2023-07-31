@@ -163,13 +163,8 @@ contract GameBase is OwnableUpgradeable {
         _;
     }
 
-    modifier registered(uint gameType) {
-        require(register.checkUserRegister(msg.sender, gameType), "GB: user not registered");
-        _;
-    }
-
     modifier mustAvailableToJoin(uint40 gameType) {
-        require(players[msg.sender].playerStates[gameType].playerState == PlayerState.DEFAULT, "GB: player already in game");
+        //        require(players[msg.sender].playerStates[gameType].playerState == PlayerState.DEFAULT, "GB: player already in game");
         _;
     }
 
@@ -194,13 +189,16 @@ contract GameBase is OwnableUpgradeable {
 
     // @notice player call this function to create new match
     function createMatch(uint40 gameType, uint minBet, uint maxBet, uint startTime) payable external mustAvailableToJoin(gameType) {
+        // check account register
+        require(register.checkUserRegister(msg.sender, gameType), "GB: user not registered");
+
         // check elo calculation contract is set
         IGamPolicy game = IGamPolicy(games[uint(gameType)]);
         require(address(game) != address(0) && maxBet >= minBet, "GB: game not exist or invalid input");
         address player = msg.sender;
         uint betAmount = msg.value + players[player].balance;
         // check attached value with input max bet
-        require(betAmount >= maxBet, "GB: value can't exceed max bet");
+        require(betAmount >= maxBet, "GB: insufficient balance");
         // check attached value with input max bet
         require(startTime > block.timestamp, "GB: game must start in future");
         // update total match and new id
@@ -224,7 +222,7 @@ contract GameBase is OwnableUpgradeable {
         matches[matchId].startTime = uint48(startTime);
 
         // update player state for this game
-        players[player].playerStates[gameType].playerState = PlayerState.PLAYING;
+        // players[player].playerStates[gameType].playerState = PlayerState.PLAYING;
 
         emit MatchStateUpdate(matchId, MatchState.WAITING_OPPONENT);
         emit MatchCreation(matchId, player, gameType, minBet, maxBet, startTime);
@@ -234,12 +232,15 @@ contract GameBase is OwnableUpgradeable {
     function cancelMatch(uint matchId, uint gameType) external requireMatchState(matchId, MatchState.WAITING_OPPONENT) {
         if (matches[matchId].player1 != msg.sender) revert("GB: must be match creator");
 
+        // silence the warning message
+        gameType;
+
         // close this game
         matches[matchId].matchState = MatchState.GAME_CLOSED;
         players[matches[matchId].player1].balance += matches[matchId].maxBet;
 
         // update player state for this game
-        players[matches[matchId].player1].playerStates[uint40(gameType)].playerState = PlayerState.DEFAULT;
+        // players[matches[matchId].player1].playerStates[uint40(gameType)].playerState = PlayerState.DEFAULT;
 
         emit MatchStateUpdate(matchId, MatchState.GAME_CLOSED);
         emit MatchCancellation(matchId, msg.sender);
@@ -254,19 +255,21 @@ contract GameBase is OwnableUpgradeable {
     {
         // check this game started so must it must closed
         MatchData storage matchData = matches[matchId];
+        address player = msg.sender;
+        // check account register
+        require(register.checkUserRegister(player, matchData.gameType), "GB: user not registered");
         require(uint256(matchData.startTime) > block.timestamp, "GB: this game is timeout");
-        require(msg.sender != matchData.player1, "GB: can not join as player 2");
+        require(player != matchData.player1, "GB: can not join as player 2");
 
         // check game policy
         require(IGamPolicy(games[matchData.gameType]).playersCanMakeMatch(
             matchData.player1,
             getEloByGameType(matchData.player1, matchData.gameType),
-            matchData.player2,
-            getEloByGameType(matchData.player2, matchData.gameType)
+            player,
+            getEloByGameType(player, matchData.gameType)
         ), "GB: can not join this match");
 
         // check value in tx in range
-        address player = msg.sender;
         uint betAmount = msg.value + players[player].balance;
         require(betAmount >= betInput, "GB: insufficient balance");
         require(betInput >= matchData.minBet && betInput <= matchData.maxBet, "GB: bet value out range");
@@ -284,7 +287,7 @@ contract GameBase is OwnableUpgradeable {
         matchData.player2 = player;
 
         // update player state
-        players[player].playerStates[matchData.gameType].playerState = PlayerState.PLAYING;
+        // players[player].playerStates[matchData.gameType].playerState = PlayerState.PLAYING;
 
         // emit event before tx ended
         emit JoinMatch(matchId, player, publicKey, betAmount);
@@ -319,8 +322,8 @@ contract GameBase is OwnableUpgradeable {
         // update storage
         matchData.matchState = MatchState.REJECT_TO_JOIN_GAME;
         _matchDraw(matchData);
-        players[matchData.player1].playerStates[matchData.gameType].playerState = PlayerState.DEFAULT;
-        players[matchData.player2].playerStates[matchData.gameType].playerState = PlayerState.DEFAULT;
+        // players[matchData.player1].playerStates[matchData.gameType].playerState = PlayerState.DEFAULT;
+        // players[matchData.player2].playerStates[matchData.gameType].playerState = PlayerState.DEFAULT;
 
         emit MatchStateUpdate(matchId, MatchState.REJECT_TO_JOIN_GAME);
     }
@@ -459,8 +462,8 @@ contract GameBase is OwnableUpgradeable {
         matchData.matchState = matchResult;
 
         // update player state
-        players[matchData.player1].playerStates[matchData.gameType].playerState = PlayerState.DEFAULT;
-        players[matchData.player2].playerStates[matchData.gameType].playerState = PlayerState.DEFAULT;
+        // players[matchData.player1].playerStates[matchData.gameType].playerState = PlayerState.DEFAULT;
+        // players[matchData.player2].playerStates[matchData.gameType].playerState = PlayerState.DEFAULT;
     }
 
     // @notice admin resolve dispute matches
