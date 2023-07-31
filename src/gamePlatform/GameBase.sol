@@ -394,8 +394,9 @@ contract GameBase is OwnableUpgradeable {
             matchResult == MatchState.PLAYER_2_TIMEOUT, "GB:result must be win-draw state");
 
         MatchData storage matchData = matches[matchId];
-        uint penaltyAmount = matchData.data.betAmount * uint(matchData.matchConfig.faultCharge) / uint(UPPER_BOUND);
-        uint serviceFeeAmount = (matchData.data.betAmount * uint(matchData.matchConfig.serviceFee) / uint(UPPER_BOUND)) * 2;
+        uint actualAmount = matchData.data.betAmount * UPPER_BOUND / (UPPER_BOUND + matchData.matchConfig.faultCharge + matchData.matchConfig.serviceFee);
+        uint penaltyAmount = actualAmount * uint(matchData.matchConfig.faultCharge) / uint(UPPER_BOUND);
+        uint serviceFeeAmount = (actualAmount * uint(matchData.matchConfig.serviceFee) / uint(UPPER_BOUND)) * 2;
         if (matchResult == MatchState.PLAYER_1_WIN) {
             // update player 1 balance
             players[matchData.player2].balance += penaltyAmount;
