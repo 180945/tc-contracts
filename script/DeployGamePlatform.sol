@@ -63,6 +63,11 @@ contract DeployGameBase is Script {
         register.register(0xbad9221EA6F733ea38B48C3FA19552755e7719e0, 1, "leon1", int(1500));
         register.register(0xF0a391886410ecF0F03951D26f89b792cf0761Da, 1, "leon2", int(1500));
         register.register(0x7286D69ed81DE05563264b9f4d47620B7768f318, 1, "issac", int(1500));
+        // 0x9699b31b25D71BDA4819bBe66244E9130cEE62b7
+        register.register(0x9699b31b25D71BDA4819bBe66244E9130cEE62b7, 1, "issac2", int(1500));
+
+        // init one match
+        gameBase.createMatch{value: 1e17}(1, 1000, 1e17, 1690795875);
 
         console.log("deploy register contract  %s", address(register));
         console.log("deploy game base contract  %s", address(gameBase));
