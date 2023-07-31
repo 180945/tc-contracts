@@ -37,6 +37,9 @@ contract GameBase is OwnableUpgradeable {
     event MatchElo(address indexed player1, int256 elo1, address indexed player2, int256 elo2);
     event MatchLiveLinkSubmitted(uint256 indexed matchId, address indexed player, string liveLink);
 
+    // @notice emitted when game timeout with reason
+    event TimeOutOccurred(uint256 indexed matchId, MatchState state);
+
     // @notice this event emitted when player claim their token from protocol
     event Claim(address, uint);
 
@@ -96,6 +99,7 @@ contract GameBase is OwnableUpgradeable {
         DISPUTE_OCCURRED, // admin jump in to resolve dispute between user
         PLAYER_1_TIMEOUT, // not follow game rule in time
         PLAYER_2_TIMEOUT, // not follow game rule in time
+        SUMMITING_RESULT, // one of player submitted result
         GAME_CLOSED, // no-one join game @notice this param used in some functions, dont change the order
         PLAYER_1_WIN,
         MATCH_DRAW,
@@ -250,7 +254,7 @@ contract GameBase is OwnableUpgradeable {
     {
         // check this game started so must it must closed
         MatchData storage matchData = matches[matchId];
-        require(uint256(matchData.startTime) > block.timestamp, "GB: this game started");
+        require(uint256(matchData.startTime) > block.timestamp, "GB: this game is timeout");
         require(msg.sender != matchData.player1, "GB: can not join as player 2");
 
         // check game policy
@@ -421,6 +425,22 @@ contract GameBase is OwnableUpgradeable {
         if (uint8(matchResult) > uint8(MatchState.GAME_CLOSED)) {
             players[matchData.player1].matches++;
             players[matchData.player2].matches++;
+
+            // update player elo
+            (
+                int elo1,
+                int elo2
+            ) = IGamPolicy(games[matchData.gameType]).getNewElo(
+                getEloByGameType(matchData.player1, matchData.gameType),
+                getEloByGameType(matchData.player2, matchData.gameType),
+                players[matchData.player1].matches,
+                players[matchData.player2].matches,
+                int(uint(matchResult)) - int(uint(MatchState.MATCH_DRAW))
+            );
+
+            emit MatchElo(matchData.player1, elo1, matchData.player1, elo2);
+            players[matchData.player1].playerStates[matchData.gameType].elo = elo1;
+            players[matchData.player2].playerStates[matchData.gameType].elo = elo2;
         }
 
         // check fault is detected
@@ -433,22 +453,6 @@ contract GameBase is OwnableUpgradeable {
             // update protocol owner balance
             players[owner()].balance += penaltyAmount;
         }
-
-        // update player elo
-        (
-         int elo1,
-         int elo2
-        ) = IGamPolicy(games[matchData.gameType]).getNewElo(
-            getEloByGameType(matchData.player1, matchData.gameType),
-            getEloByGameType(matchData.player2, matchData.gameType),
-            players[matchData.player1].matches,
-            players[matchData.player2].matches,
-            int(uint(matchResult)) - int(uint(MatchState.MATCH_DRAW))
-        );
-
-        emit MatchElo(matchData.player1, elo1, matchData.player1, elo2);
-        players[matchData.player1].playerStates[matchData.gameType].elo = elo1;
-        players[matchData.player2].playerStates[matchData.gameType].elo = elo2;
 
         // update match state
         matchData.matchState = matchResult;
@@ -469,11 +473,14 @@ contract GameBase is OwnableUpgradeable {
     }
 
     // @notice player submit match result
-    function submitResult(uint matchId, MatchResult result) external requireMatchState(matchId, MatchState.MATCH_STARTED) onlyPlayerOf(matchId) {
+    function submitResult(uint matchId, MatchResult result) external onlyPlayerOf(matchId) {
         require(result != MatchResult.PLAYING, "GB: invalid result");
-
         // point to storage
         MatchData storage matchData = matches[matchId];
+
+        // check game state
+        require(matchData.matchState == MatchState.SUMMITING_RESULT ||
+            matchData.matchState == MatchState.MATCH_STARTED,"GB: invalid match state");
 
         // can not submit game not started
         require(block.timestamp > matchData.startTime, "GB: game not started");
@@ -514,10 +521,11 @@ contract GameBase is OwnableUpgradeable {
         }
 
         // emit event for 3rd party
-        if (matchData.matchState != MatchState.MATCH_STARTED) {
-            emit MatchStateUpdate(matchId, matchData.matchState);
+        if (matchData.matchState == MatchState.MATCH_STARTED) {
+            matchData.matchState = MatchState.SUMMITING_RESULT;
         }
 
+        emit MatchStateUpdate(matchId, matchData.matchState);
         emit ResultSubmitted(matchId, result, msg.sender);
     }
 
@@ -549,12 +557,15 @@ contract GameBase is OwnableUpgradeable {
             if (matchData.matchState == MatchState.WAITING_INVITATION) {
                 require(block.timestamp - uint256(matchData.startTime) > matchData.matchConfig.timeBuffer, "GB: 1 not timeout yet");
             }
+            emit TimeOutOccurred(matchId, matchData.matchState);
 
             _handleResult(matchId, MatchState.PLAYER_1_TIMEOUT, Fault(false, false));
 
             emit MatchStateUpdate(matchId, MatchState.PLAYER_1_TIMEOUT);
             return;
         } else if(matchData.matchState == MatchState.WAITING_CONFIRM_JOIN) {
+            emit TimeOutOccurred(matchId, matchData.matchState);
+
             _handleResult(matchId, MatchState.PLAYER_2_TIMEOUT, Fault(false, false));
 
             emit MatchStateUpdate(matchId, MatchState.PLAYER_2_TIMEOUT);
@@ -563,13 +574,26 @@ contract GameBase is OwnableUpgradeable {
 
         // handle case submitted result
         require(block.timestamp - uint256(matchData.lastTimestamp) > matchData.matchConfig.timeSubmitMatchResult, "GB: 2 not timeout yet");
-        if (matchData.matchState == MatchState.MATCH_STARTED &&
+        if (matchData.matchState == MatchState.SUMMITING_RESULT &&
             uint8(matchData.player2SummitResult) * uint8(matchData.player1SummitResult) == 0 &&
             matchData.player2SummitResult != matchData.player1SummitResult
         ) {
-            MatchState matchResult = matchData.player1SummitResult == MatchResult.PLAYING ? MatchState.PLAYER_1_TIMEOUT : MatchState.PLAYER_2_TIMEOUT;
+            MatchState matchResult;
+            bool isPlayer1Fault;
 
-            _handleResult(matchId, matchResult, Fault(false, false));
+            // emit event with reason for tracking purpose
+            emit TimeOutOccurred(matchId, matchData.matchState);
+
+            if (matchData.player1SummitResult == MatchResult.PLAYING) {
+                // player 1 did not submit result to the match
+                // charge fault amount
+                matchResult = MatchState(uint8(matchData.player2SummitResult) + uint8(MatchState.GAME_CLOSED));
+                isPlayer1Fault = true;
+            } else {
+                matchResult = MatchState(uint8(matchData.player1SummitResult) + uint8(MatchState.GAME_CLOSED));
+            }
+
+            _handleResult(matchId, matchResult, Fault(true, isPlayer1Fault));
             emit MatchStateUpdate(matchId, matchResult);
 
             return;
