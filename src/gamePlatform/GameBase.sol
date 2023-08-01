@@ -444,7 +444,7 @@ contract GameBase is OwnableUpgradeable {
                 int(uint(matchResult)) - int(uint(MatchState.MATCH_DRAW))
             );
 
-            emit MatchElo(matchId, matchData.gameType,matchData.player1, elo1, matchData.player1, elo2);
+            emit MatchElo(matchId, matchData.gameType,matchData.player1, elo1, matchData.player2, elo2);
             players[matchData.player1].playerStates[matchData.gameType].elo = elo1;
             players[matchData.player2].playerStates[matchData.gameType].elo = elo2;
         }
@@ -609,16 +609,23 @@ contract GameBase is OwnableUpgradeable {
     }
 
     // @notice player claim TC
-    function claim(uint amount_) external {
-        uint availableAmount = players[msg.sender].balance;
+    // claim all
+    function claim(address claimer_) external {
+        claim(claimer_, players[claimer_].balance);
+    }
+
+    // @notice player claim TC
+    // @dev claim with input amount
+    function claim(address claimer_, uint amount_) public {
+        uint availableAmount = players[claimer_].balance;
         if (amount_ <= availableAmount) {
             unchecked {
-                players[msg.sender].balance -= amount_;
+                players[claimer_].balance -= amount_;
             }
-            (bool success,) = msg.sender.call{value: amount_}("");
+            (bool success,) = claimer_.call{value: amount_}("");
             require(success, "GB: claim failed");
 
-            emit Claim(msg.sender, amount_);
+            emit Claim(claimer_, amount_);
         }
     }
 

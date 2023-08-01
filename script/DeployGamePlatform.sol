@@ -67,9 +67,10 @@ contract DeployGameBase is Script {
         register.register(0x9699b31b25D71BDA4819bBe66244E9130cEE62b7, 1, "issac2", int(1500));
 
         // init one match
-        gameBase.createMatch{value: 1e17}(1, 1000, 1e17, 1690856956);
+        gameBase.createMatch{value: 1e17}(1, 1000, 1e17, 1690888533);
 
         console.log("deploy register contract  %s", address(register));
+        console.log("deploy game base implementation contract  %s", address(newGameBase));
         console.log("deploy game base contract  %s", address(gameBase));
         console.log("deploy ttt game contract  %s", address(newGame));
 
