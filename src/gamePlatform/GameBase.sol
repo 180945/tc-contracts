@@ -299,8 +299,8 @@ contract GameBase is OwnableUpgradeable {
     // @notice player 1 submit invite link for opponent
     function submitInviteLink(uint matchId, string calldata inviteLink) external requireMatchState(matchId, MatchState.WAITING_INVITATION) {
         MatchData storage matchData = matches[matchId];
-        require(block.timestamp - uint256(matchData.lastTimestamp) <= matchData.matchConfig.timeBuffer, "GB: timeout");
         require(block.timestamp >= matchData.startTime, "GB: game not start yet");
+        require(block.timestamp - uint256(matchData.startTime) <= matchData.matchConfig.timeBuffer, "GB: timeout");
 
         // only player 1 of this match can call this function
         require(matchData.player1 == msg.sender, "GB: unauthorized");
