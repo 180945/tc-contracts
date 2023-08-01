@@ -50,7 +50,7 @@ contract DeployGameBase is Script {
                 GameBase.initialize.selector,
                 owner,
                 register,
-                GameConfig(1000, 500, 15 * 3600, 90 * 3600)
+                GameConfig(1000, 500, 15 * 60, 90 * 60)
             )
         )));
 

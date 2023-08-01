@@ -243,8 +243,8 @@ contract GameBase is OwnableUpgradeable {
         // update player state for this game
         // players[matches[matchId].player1].playerStates[uint40(gameType)].playerState = PlayerState.DEFAULT;
 
-        emit MatchStateUpdate(matchId, MatchState.GAME_CLOSED);
         emit MatchCancellation(matchId, msg.sender);
+        emit MatchStateUpdate(matchId, MatchState.GAME_CLOSED);
     }
 
     // @notice Player 2 request to join challenge
