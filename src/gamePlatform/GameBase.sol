@@ -34,8 +34,9 @@ contract GameBase is OwnableUpgradeable {
     event JoinMatch(uint256 indexed matchId, address player, string pubkey, uint betAmount);
     event ResultSubmitted(uint256 indexed matchId, MatchResult indexed result, address player);
     event EloUpdate(address indexed player, int256 oldElo, int256 newElo);
-    event MatchElo(address indexed player1, int256 elo1, address indexed player2, int256 elo2);
+    event MatchElo(uint256 indexed matchId, uint40 gameType, address player1, int256 elo1, address player2, int256 elo2);
     event MatchLiveLinkSubmitted(uint256 indexed matchId, address indexed player, string liveLink);
+    event MatchInviteLinkSubmitted(uint256 indexed matchId, address indexed player, string inviteLink);
 
     // @notice emitted when game timeout with reason
     event TimeOutOccurred(uint256 indexed matchId, MatchState state);
@@ -224,8 +225,8 @@ contract GameBase is OwnableUpgradeable {
         // update player state for this game
         // players[player].playerStates[gameType].playerState = PlayerState.PLAYING;
 
-        emit MatchStateUpdate(matchId, MatchState.WAITING_OPPONENT);
         emit MatchCreation(matchId, player, gameType, minBet, maxBet, startTime);
+        emit MatchStateUpdate(matchId, MatchState.WAITING_OPPONENT);
     }
 
     // @notice player wait too long for opponent so call this function to cancel
@@ -308,6 +309,7 @@ contract GameBase is OwnableUpgradeable {
         matchData.matchState = MatchState.WAITING_CONFIRM_JOIN;
         matchData.lastTimestamp = uint48(block.timestamp);
 
+        emit MatchInviteLinkSubmitted(matchId, msg.sender, inviteLink);
         emit MatchStateUpdate(matchId, MatchState.WAITING_CONFIRM_JOIN);
     }
 
@@ -442,7 +444,7 @@ contract GameBase is OwnableUpgradeable {
                 int(uint(matchResult)) - int(uint(MatchState.MATCH_DRAW))
             );
 
-            emit MatchElo(matchData.player1, elo1, matchData.player1, elo2);
+            emit MatchElo(matchId, matchData.gameType,matchData.player1, elo1, matchData.player1, elo2);
             players[matchData.player1].playerStates[matchData.gameType].elo = elo1;
             players[matchData.player2].playerStates[matchData.gameType].elo = elo2;
         }
