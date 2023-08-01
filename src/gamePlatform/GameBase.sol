@@ -37,6 +37,7 @@ contract GameBase is OwnableUpgradeable {
     event MatchElo(uint256 indexed matchId, uint40 gameType, address player1, int256 elo1, address player2, int256 elo2);
     event MatchLiveLinkSubmitted(uint256 indexed matchId, address indexed player, string liveLink);
     event MatchInviteLinkSubmitted(uint256 indexed matchId, address indexed player, string inviteLink);
+    event MatchResolved(uint256 indexed matchId, address resolver, MatchState state, Fault fault);
 
     // @notice emitted when game timeout with reason
     event TimeOutOccurred(uint256 indexed matchId, MatchState state);
@@ -476,6 +477,7 @@ contract GameBase is OwnableUpgradeable {
         _handleResult(matchId, matchResult, fault);
 
         emit MatchStateUpdate(matchId, matchResult);
+        emit MatchResolved(matchId, msg.sender, matchResult, fault);
     }
 
     // @notice player submit match result
