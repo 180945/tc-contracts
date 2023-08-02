@@ -324,7 +324,7 @@ contract GameBase is OwnableUpgradeable {
 
         // update storage
         matchData.matchState = MatchState.REJECT_TO_JOIN_GAME;
-        _matchDraw(matchData);
+        _matchDraw(matchData, 0);
         // players[matchData.player1].playerStates[matchData.gameType].playerState = PlayerState.DEFAULT;
         // players[matchData.player2].playerStates[matchData.gameType].playerState = PlayerState.DEFAULT;
 
@@ -388,9 +388,12 @@ contract GameBase is OwnableUpgradeable {
     // @notice THIS SECTION DEFINE HOW GAME END AND AMOUNT EARNED
 
     // @notice handle draw game internally
-    function _matchDraw(MatchData memory matchData) internal {
-        players[matchData.player1].balance += matchData.maxBet;
-        players[matchData.player2].balance += matchData.data.betAmount;
+    function _matchDraw(MatchData memory matchData, uint serviceFee) internal {
+        players[matchData.player1].balance += matchData.maxBet - serviceFee / 2;
+        players[matchData.player2].balance += matchData.data.betAmount - serviceFee / 2;
+        if (serviceFee > 0) {
+            players[owner()].balance += serviceFee;
+        }
     }
     
     // @notice internal logic to handle game result
@@ -425,7 +428,7 @@ contract GameBase is OwnableUpgradeable {
             players[owner()].balance += serviceFeeAmount / 2;
         } else {
             // game draw
-            _matchDraw(matchData);
+            _matchDraw(matchData, serviceFeeAmount);
         }
 
         // update match players competed
@@ -452,13 +455,8 @@ contract GameBase is OwnableUpgradeable {
 
         // check fault is detected
         if (fault.detected) {
-            if (fault.isPlayer1) {
-                players[matchData.player1].balance -= penaltyAmount;
-            } else {
-                players[matchData.player2].balance -= penaltyAmount;
-            }
-            // update protocol owner balance
-            players[owner()].balance += penaltyAmount;
+            players[fault.isPlayer1 ? matchData.player1 : matchData.player2].balance -= penaltyAmount;
+            players[!fault.isPlayer1 ? matchData.player1 : matchData.player2].balance += penaltyAmount;
         }
 
         // update match state
