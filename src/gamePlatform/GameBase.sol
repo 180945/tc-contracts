@@ -196,7 +196,7 @@ contract GameBase is OwnableUpgradeable {
 
         // check elo calculation contract is set
         IGamPolicy game = IGamPolicy(games[uint(gameType)]);
-        require(address(game) != address(0) && maxBet >= minBet, "GB: game not exist or invalid input");
+        require(address(game) != address(0) && maxBet >= minBet && minBet > 0, "GB: game not exist or invalid input");
         address player = msg.sender;
         uint betAmount = msg.value + players[player].balance;
         // check attached value with input max bet
