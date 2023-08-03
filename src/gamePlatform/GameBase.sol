@@ -520,6 +520,10 @@ contract GameBase is OwnableUpgradeable {
             (matchData.player1SummitResult == MatchResult.PLAYER_1_WON || matchData.player1SummitResult == MatchResult.PLAYING))
         {
             _handleResult(matchId, MatchState.PLAYER_1_WIN, temp);
+        } else if (matchData.player2SummitResult == matchData.player1SummitResult &&
+            matchData.player2SummitResult == MatchResult.DREW)
+        {
+            _handleResult(matchId, MatchState.MATCH_DRAW, temp);
         } else if (matchData.player2SummitResult != MatchResult.PLAYING &&
             matchData.player1SummitResult != MatchResult.PLAYING)
         {
