@@ -57,7 +57,7 @@ contract DeployGameBase is Script {
         register.setGameBase(IElo(address(gameBase)));
 
         // new game
-        TTT newGame = new TTT();
+        Chess newGame = new Chess();
         gameBase.registerGame(1, address(newGame));
 
 //        register.register(0xbad9221EA6F733ea38B48C3FA19552755e7719e0, 1, "leon1", int(1500));
@@ -73,6 +73,20 @@ contract DeployGameBase is Script {
         console.log("deploy game base implementation contract  %s", address(newGameBase));
         console.log("deploy game base contract  %s", address(gameBase));
         console.log("deploy ttt game contract  %s", address(newGame));
+
+        vm.stopBroadcast();
+    }
+}
+
+contract UpdateGameBase is Script {
+    function setUp() public { }
+
+    function run() public {
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        vm.startBroadcast(deployerPrivateKey);
+
+        GameBase newGameBase = new GameBase();
+        ITransparentUpgradeableProxy(0x60B0Bf853F406Ccfa0F95dA804eC14a5dc4C72b6).upgradeTo(address(newGameBase));
 
         vm.stopBroadcast();
     }
