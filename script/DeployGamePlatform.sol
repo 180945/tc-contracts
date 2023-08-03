@@ -20,8 +20,8 @@ contract DeployGameBase is Script {
     }
 
     function setUp() public {
-        upgradeAddress = 0x637249dBbAE73035C26F267572a5454d8E2a20B3;
-        owner = 0x7286D69ed81DE05563264b9f4d47620B7768f318;
+        upgradeAddress = 0xE7143319283D0b5b234AEA046769D40bee5C6D43;
+        owner = 0x01e7663F7359698E2B1da534b478b71e4b0D50e9;
     }
 
     function run() public {
@@ -50,7 +50,7 @@ contract DeployGameBase is Script {
                 GameBase.initialize.selector,
                 owner,
                 register,
-                GameConfig(1000, 500, 15 * 3600, 90 * 3600)
+                GameConfig(1000, 1000, 15 * 60, 90 * 60)
             )
         )));
 
@@ -58,9 +58,19 @@ contract DeployGameBase is Script {
 
         // new game
         TTT newGame = new TTT();
-        gameBase.registerGame(0, address(newGame));
+        gameBase.registerGame(1, address(newGame));
+
+//        register.register(0xbad9221EA6F733ea38B48C3FA19552755e7719e0, 1, "leon1", int(1500));
+//        register.register(0xF0a391886410ecF0F03951D26f89b792cf0761Da, 1, "leon2", int(1500));
+//        register.register(0x7286D69ed81DE05563264b9f4d47620B7768f318, 1, "issac", int(1500));
+        // 0x9699b31b25D71BDA4819bBe66244E9130cEE62b7
+//        register.register(0x9699b31b25D71BDA4819bBe66244E9130cEE62b7, 1, "issac2", int(1500));
+
+        // init one match
+//        gameBase.createMatch{value: 1e17}(1, 1000, 1e17, 1690996335);
 
         console.log("deploy register contract  %s", address(register));
+        console.log("deploy game base implementation contract  %s", address(newGameBase));
         console.log("deploy game base contract  %s", address(gameBase));
         console.log("deploy ttt game contract  %s", address(newGame));
 

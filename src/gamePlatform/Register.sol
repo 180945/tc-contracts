@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import {OwnableUpgradeable} from "@openzeppelin-upgradeable/contracts/access/OwnableUpgradeable.sol";
 
 interface IElo {
-    function setUserElo(address tcAddr, uint gameType, int elo) external;
+    function setUserElo(address tcAddr, uint40 gameType, int elo) external;
 }
 
 contract Register is OwnableUpgradeable {
@@ -25,14 +25,14 @@ contract Register is OwnableUpgradeable {
       * @dev tracking account => game type => gamer info
       * elo will query to
       */
-    mapping(address => mapping(uint => GamerInfo)) public gamers;
+    mapping(address => mapping(uint40 => GamerInfo)) public gamers;
 
     function initialize(address admin_) external initializer {
         _transferOwnership(admin_);
     }
 
     // @dev admin call this function to register user to the game platform
-    function register(address tcAddr, uint gameType, string calldata username, int elo) external onlyOwner {
+    function register(address tcAddr, uint40 gameType, string calldata username, int elo) external onlyOwner {
         // validate input
         require(bytes(username).length > 0 && tcAddr != address(0) && gameType > 0, "Register: invalid input data");
 
@@ -51,7 +51,7 @@ contract Register is OwnableUpgradeable {
     }
 
     // @notice this function used by internal/external contract to check user must be registered before doing anything
-    function checkUserRegister(address account, uint gameType) public view returns(bool) {
+    function checkUserRegister(address account, uint40 gameType) public view returns(bool) {
         return bytes(gamers[account][gameType].username).length > 0;
     }
 
@@ -61,7 +61,7 @@ contract Register is OwnableUpgradeable {
     }
 
     // @notice get account info
-    function getUserName(address account, uint gameType) public view returns(string memory) {
+    function getUserName(address account, uint40 gameType) public view returns(string memory) {
         return gamers[account][gameType].username;
     }
 

@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import { Elo } from "@tc/Elo.sol";
 
-contract TTT {
+contract Chess {
     /**
      * @notice Input the current elo and game result will get new output elo
      * @return
@@ -37,22 +37,19 @@ contract TTT {
             eloGap = -eloGap;
         }
 
-        return eloGap < 200;
+        return eloGap < int(200);
     }
 
     // @notice this function evaluate the TC max match creator can bet
     // address 0x00 for native token
+    //>= 800: Expert: 100 TC
     function maxCanBet(address player, address token, int elo) external pure returns(uint) {
         player;
         token;
 
         uint max;
-        if (elo >= 500 && elo < 1000) {
-            max = 50 ether;
-        } else if (elo >= 1000 && elo < 2000) {
+        if (elo >= 800) {
             max = 100 ether;
-        } else if (max >= 2000) {
-            max = type(uint256).max;
         }
 
         return max;
