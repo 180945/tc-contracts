@@ -449,17 +449,17 @@ contract GameBase is OwnableUpgradeable {
 
 
         // check not time out
-        if (matchData.player1SummitResult != MatchResult.PLAYING && matchData.player2SummitResult != MatchResult.PLAYING) {
-            matchData.lastTimestamp = uint48(block.timestamp);
-        } else {
+        if (matchData.matchState == MatchState.SUMMITING_RESULT) {
             require(block.timestamp - matchData.lastTimestamp < uint(matchData.matchConfig.timeSubmitMatchResult), "GB: time out");
         }
 
         // update storage
         if (msg.sender == matchData.player1) {
             matchData.player1SummitResult = result;
+            matchData.data.proofLinkP1 = proofLink;
         } else {
             matchData.player2SummitResult = result;
+            matchData.data.proofLinkP2 = proofLink;
         }
 
         // handle cases based result user submitted
@@ -485,6 +485,7 @@ contract GameBase is OwnableUpgradeable {
         // emit event for 3rd party
         if (matchData.matchState == MatchState.MATCH_STARTED) {
             matchData.matchState = MatchState.SUMMITING_RESULT;
+            matchData.lastTimestamp = uint48(block.timestamp);
         }
 
         emit MatchStateUpdate(matchId, matchData.matchState);
@@ -527,11 +528,8 @@ contract GameBase is OwnableUpgradeable {
 
         // handle case submitted result
         require(block.timestamp - uint256(matchData.lastTimestamp) > matchData.matchConfig.timeSubmitMatchResult, "GB: 2 not timeout yet");
-        if (matchData.matchState == MatchState.SUMMITING_RESULT &&
-            uint8(matchData.player2SummitResult) * uint8(matchData.player1SummitResult) == 0 &&
-            matchData.player2SummitResult != matchData.player1SummitResult
-        ) {
-            MatchState matchResult;
+        if (matchData.matchState == MatchState.SUMMITING_RESULT) {
+            MatchState matchResult = MatchState.REJECT_TO_JOIN_GAME;
             bool isPlayer1Fault;
 
             // emit event with reason for tracking purpose
@@ -540,10 +538,14 @@ contract GameBase is OwnableUpgradeable {
             if (matchData.player1SummitResult == MatchResult.PLAYING) {
                 // player 1 did not submit result to the match
                 // charge fault amount
-                matchResult = MatchState(uint8(matchData.player2SummitResult) + uint8(MatchState.GAME_CLOSED));
+                if (matchData.player2SummitResult != MatchResult.REJECT) {
+                    matchResult = MatchState(uint8(matchData.player2SummitResult) + uint8(MatchState.GAME_CLOSED));
+                }
                 isPlayer1Fault = true;
             } else {
-                matchResult = MatchState(uint8(matchData.player1SummitResult) + uint8(MatchState.GAME_CLOSED));
+                if (matchData.player1SummitResult != MatchResult.REJECT) {
+                    matchResult = MatchState(uint8(matchData.player1SummitResult) + uint8(MatchState.GAME_CLOSED));
+                }
             }
 
             _handleResult(matchId, matchResult, Fault(true, isPlayer1Fault));
