@@ -32,7 +32,7 @@ contract GameBase is OwnableUpgradeable {
     event MatchCancellation(uint256 indexed matchId, address indexed player);
     event MatchStateUpdate(uint256 indexed matchId, MatchState state);
     event JoinMatch(uint256 indexed matchId, address player, string pubkey, uint betAmount);
-    event ResultSubmitted(uint256 indexed matchId, MatchResult indexed result, address player);
+    event ResultSubmitted(uint256 indexed matchId, MatchResult indexed result, address player, string proofLink);
     event EloUpdate(address indexed player, int256 oldElo, int256 newElo);
     event MatchElo(uint256 indexed matchId, uint40 gameType, address player1, int256 elo1, address player2, int256 elo2);
     event MatchLiveLinkSubmitted(uint256 indexed matchId, address indexed player, string liveLink);
@@ -75,7 +75,8 @@ contract GameBase is OwnableUpgradeable {
         PLAYING,
         PLAYER_1_WON,
         DREW,
-        PLAYER_2_WON
+        PLAYER_2_WON,
+        REJECT
     }
 
     enum PlayerState {
@@ -94,14 +95,12 @@ contract GameBase is OwnableUpgradeable {
         EMPTY, // A create match
         WAITING_OPPONENT, // waiting B join match
         WAITING_INVITATION, // waiting A submit invite link
-        WAITING_CONFIRM_JOIN, // waiting B confirm reject/join match with link live
-        REJECT_TO_JOIN_GAME, // B reject to join game -> game draw no fee charged at this step
-        LIVE_LINK_SUBMITTED, // B submit link live and wait A confirm link is valid
         MATCH_STARTED, // A accept match and game start
+        SUMMITING_RESULT, // one of player submitted result
         DISPUTE_OCCURRED, // admin jump in to resolve dispute between user
+        REJECT_TO_JOIN_GAME, // 6: B reject to join game -> game draw no fee charged at this step  // end game
         PLAYER_1_TIMEOUT, // not follow game rule in time
         PLAYER_2_TIMEOUT, // not follow game rule in time
-        SUMMITING_RESULT, // one of player submitted result
         GAME_CLOSED, // no-one join game @notice this param used in some functions, dont change the order
         PLAYER_1_WIN,
         MATCH_DRAW,
@@ -119,7 +118,8 @@ contract GameBase is OwnableUpgradeable {
         uint betAmount;
         string player2PubKey;
         string inviteLink;
-        string liveLink;
+        string proofLinkP1;
+        string proofLinkP2;
     }
 
     struct MatchData {
@@ -307,73 +307,11 @@ contract GameBase is OwnableUpgradeable {
 
         // update storage
         matchData.data.inviteLink = inviteLink;
-        matchData.matchState = MatchState.WAITING_CONFIRM_JOIN;
+        matchData.matchState = MatchState.MATCH_STARTED;
         matchData.lastTimestamp = uint48(block.timestamp);
 
         emit MatchInviteLinkSubmitted(matchId, msg.sender, inviteLink);
-        emit MatchStateUpdate(matchId, MatchState.WAITING_CONFIRM_JOIN);
-    }
-
-    // @notice player 2 submit reject match
-    function rejectMatch(uint matchId) external requireMatchState(matchId, MatchState.WAITING_CONFIRM_JOIN) {
-        MatchData storage matchData = matches[matchId];
-        require(block.timestamp - uint256(matchData.lastTimestamp) <= matchData.matchConfig.timeBuffer, "GameBase: timeout");
-
-        // only player 2 of this match can call this function
-        require(matchData.player2 == msg.sender, "GB: unauthorized");
-
-        // update storage
-        matchData.matchState = MatchState.REJECT_TO_JOIN_GAME;
-        _matchDraw(matchData, 0);
-        // players[matchData.player1].playerStates[matchData.gameType].playerState = PlayerState.DEFAULT;
-        // players[matchData.player2].playerStates[matchData.gameType].playerState = PlayerState.DEFAULT;
-
-        emit MatchStateUpdate(matchId, MatchState.REJECT_TO_JOIN_GAME);
-    }
-
-    // @notice the match will start at start time
-    function joinConfirmedMatch(uint matchId, string calldata liveLink) external requireMatchState(matchId, MatchState.WAITING_CONFIRM_JOIN) {
-        MatchData storage matchData = matches[matchId];
-        require(block.timestamp - uint256(matchData.lastTimestamp) <= matchData.matchConfig.timeBuffer, "GB: timeout");
-
-        // only player 2 of this match can call this function
-        require(matchData.player2 == msg.sender, "GB: unauthorized");
-
-        // update storage
-        matchData.matchState = MatchState.LIVE_LINK_SUBMITTED;
-        matchData.data.liveLink = liveLink;
-        matchData.lastTimestamp = uint48(block.timestamp);
-
-        emit MatchLiveLinkSubmitted(matchId, msg.sender, liveLink);
-        emit MatchStateUpdate(matchId, MatchState.LIVE_LINK_SUBMITTED);
-    }
-
-    // @notice match creator call this function to accept link live and game start
-    function acceptLiveMatch(uint matchId) external requireMatchState(matchId, MatchState.LIVE_LINK_SUBMITTED) {
-        MatchData storage matchData = matches[matchId];
-        require(block.timestamp - uint256(matchData.lastTimestamp) <= matchData.matchConfig.timeBuffer, "GB: timeout");
-
-        // only player 1 of this match can call this function
-        require(matchData.player1 == msg.sender, "GB: unauthorized");
-
-        // update storage
-        matchData.matchState = MatchState.MATCH_STARTED;
-
         emit MatchStateUpdate(matchId, MatchState.MATCH_STARTED);
-    }
-
-    // @notice match creator reject join match. This will lead to need resolver jump in
-    function rejectLiveMatch(uint matchId) external requireMatchState(matchId, MatchState.LIVE_LINK_SUBMITTED) {
-        MatchData storage matchData = matches[matchId];
-        require(block.timestamp - uint256(matchData.lastTimestamp) <= matchData.matchConfig.timeBuffer, "GB: timeout");
-
-        // only player 1 of this match can call this function
-        require(matchData.player1 == msg.sender, "GB: unauthorized");
-
-        // update storage
-        matchData.matchState = MatchState.DISPUTE_OCCURRED;
-
-        emit MatchStateUpdate(matchId, MatchState.DISPUTE_OCCURRED);
     }
 
     // @note add resolver
@@ -399,6 +337,7 @@ contract GameBase is OwnableUpgradeable {
     // @notice internal logic to handle game result
     function _handleResult(uint matchId, MatchState matchResult, Fault memory fault) internal {
         require(uint8(matchResult) > uint8(MatchState.GAME_CLOSED) ||
+            matchResult == MatchState.REJECT_TO_JOIN_GAME ||
             matchResult == MatchState.PLAYER_1_TIMEOUT ||
             matchResult == MatchState.PLAYER_2_TIMEOUT, "GB:result must be win-draw state");
 
@@ -426,9 +365,12 @@ contract GameBase is OwnableUpgradeable {
             players[matchData.player2].balance += matchData.data.betAmount - penaltyAmount - serviceFeeAmount / 2;
             players[matchData.player1].balance += uint(matchData.maxBet) + penaltyAmount;
             players[owner()].balance += serviceFeeAmount / 2;
-        } else {
+        } else if (matchResult == MatchState.MATCH_DRAW) {
             // game draw
             _matchDraw(matchData, serviceFeeAmount);
+        } else {
+            // player B reject to join
+            _matchDraw(matchData, 0);
         }
 
         // update match players competed
@@ -479,7 +421,7 @@ contract GameBase is OwnableUpgradeable {
     }
 
     // @notice player submit match result
-    function submitResult(uint matchId, MatchResult result) external onlyPlayerOf(matchId) {
+    function submitResult(uint matchId, MatchResult result, string calldata proofLink) external onlyPlayerOf(matchId) {
         require(result != MatchResult.PLAYING, "GB: invalid result");
         // point to storage
         MatchData storage matchData = matches[matchId];
@@ -495,6 +437,16 @@ contract GameBase is OwnableUpgradeable {
             msg.sender == matchData.player2 && matchData.player2SummitResult != MatchResult.PLAYING) {
             revert ("GB: user submitted result");
         }
+
+        if (msg.sender == matchData.player1) {
+            matchData.data.proofLinkP1 = proofLink;
+        } else {
+            matchData.data.proofLinkP2 = proofLink;
+        }
+
+        // only B can submit reject match first
+        // todo: handle this flow
+
 
         // check not time out
         if (matchData.player1SummitResult != MatchResult.PLAYING && matchData.player2SummitResult != MatchResult.PLAYING) {
@@ -521,9 +473,9 @@ contract GameBase is OwnableUpgradeable {
         {
             _handleResult(matchId, MatchState.PLAYER_1_WIN, temp);
         } else if (matchData.player2SummitResult == matchData.player1SummitResult &&
-            matchData.player2SummitResult == MatchResult.DREW)
+            (matchData.player2SummitResult == MatchResult.DREW || matchData.player2SummitResult == MatchResult.REJECT))
         {
-            _handleResult(matchId, MatchState.MATCH_DRAW, temp);
+            _handleResult(matchId, matchData.player2SummitResult == MatchResult.DREW ? MatchState.MATCH_DRAW : MatchState.REJECT_TO_JOIN_GAME, temp);
         } else if (matchData.player2SummitResult != MatchResult.PLAYING &&
             matchData.player1SummitResult != MatchResult.PLAYING)
         {
@@ -536,7 +488,7 @@ contract GameBase is OwnableUpgradeable {
         }
 
         emit MatchStateUpdate(matchId, matchData.matchState);
-        emit ResultSubmitted(matchId, result, msg.sender);
+        emit ResultSubmitted(matchId, result, msg.sender, proofLink);
     }
 
     // @notice match timeout so trigger this function to claim as winner (anyone can call this function)
@@ -563,22 +515,13 @@ contract GameBase is OwnableUpgradeable {
         require(block.timestamp - uint256(matchData.lastTimestamp) > matchData.matchConfig.timeBuffer, "GB: 1 not timeout yet");
 
         // these are state win for B
-        if (matchData.matchState == MatchState.WAITING_INVITATION || matchData.matchState == MatchState.LIVE_LINK_SUBMITTED) {
-            if (matchData.matchState == MatchState.WAITING_INVITATION) {
-                require(block.timestamp - uint256(matchData.startTime) > matchData.matchConfig.timeBuffer, "GB: 1 not timeout yet");
-            }
+        if (matchData.matchState == MatchState.WAITING_INVITATION) {
+            require(block.timestamp - uint256(matchData.startTime) > matchData.matchConfig.timeBuffer, "GB: 1 not timeout yet");
             emit TimeOutOccurred(matchId, matchData.matchState);
 
             _handleResult(matchId, MatchState.PLAYER_1_TIMEOUT, Fault(false, false));
 
             emit MatchStateUpdate(matchId, MatchState.PLAYER_1_TIMEOUT);
-            return;
-        } else if(matchData.matchState == MatchState.WAITING_CONFIRM_JOIN) {
-            emit TimeOutOccurred(matchId, matchData.matchState);
-
-            _handleResult(matchId, MatchState.PLAYER_2_TIMEOUT, Fault(false, false));
-
-            emit MatchStateUpdate(matchId, MatchState.PLAYER_2_TIMEOUT);
             return;
         }
 

@@ -5,7 +5,8 @@ import "forge-std/Script.sol";
 import "../src/gamePlatform/Register.sol";
 import "../src/gamePlatform/GameBase.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import "../src/gamePlatform/ttt/ttt.sol";
+import "../src/gamePlatform/games/ttt.sol";
+import "../src/gamePlatform/games/Pes.sol";
 
 contract DeployGameBase is Script {
     address upgradeAddress;
@@ -20,8 +21,8 @@ contract DeployGameBase is Script {
     }
 
     function setUp() public {
-        upgradeAddress = 0xE7143319283D0b5b234AEA046769D40bee5C6D43;
-        owner = 0x01e7663F7359698E2B1da534b478b71e4b0D50e9;
+        upgradeAddress = 0x637249dBbAE73035C26F267572a5454d8E2a20B3;
+        owner = 0x7286D69ed81DE05563264b9f4d47620B7768f318;
     }
 
     function run() public {
@@ -58,7 +59,9 @@ contract DeployGameBase is Script {
 
         // new game
         Chess newGame = new Chess();
+        PES pes = new PES();
         gameBase.registerGame(1, address(newGame));
+        gameBase.registerGame(2, address(pes));
 
 //        register.register(0xbad9221EA6F733ea38B48C3FA19552755e7719e0, 1, "leon1", int(1500));
 //        register.register(0xF0a391886410ecF0F03951D26f89b792cf0761Da, 1, "leon2", int(1500));
@@ -72,7 +75,8 @@ contract DeployGameBase is Script {
         console.log("deploy register contract  %s", address(register));
         console.log("deploy game base implementation contract  %s", address(newGameBase));
         console.log("deploy game base contract  %s", address(gameBase));
-        console.log("deploy ttt game contract  %s", address(newGame));
+        console.log("deploy chess game contract  %s", address(newGame));
+        console.log("deploy pes game contract  %s", address(pes));
 
         vm.stopBroadcast();
     }
