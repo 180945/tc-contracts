@@ -368,9 +368,11 @@ contract GameBase is OwnableUpgradeable {
         } else if (matchResult == MatchState.MATCH_DRAW) {
             // game draw
             _matchDraw(matchData, serviceFeeAmount);
-        } else {
+        } else if (matchResult == MatchState.REJECT_TO_JOIN_GAME) {
             // player B reject to join
             _matchDraw(matchData, 0);
+        } else {
+            revert("GB: state not handled yet");
         }
 
         // update match players competed
@@ -445,8 +447,9 @@ contract GameBase is OwnableUpgradeable {
         }
 
         // only B can submit reject match first
-        // todo: handle this flow
-
+        if (result == MatchResult.REJECT && matchData.matchState == MatchState.MATCH_STARTED) {
+            require(msg.sender == matchData.player2, "GB: player 2 must submit first");
+        }
 
         // check not time out
         if (matchData.matchState == MatchState.SUMMITING_RESULT) {
