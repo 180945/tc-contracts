@@ -533,6 +533,7 @@ contract GameBase is OwnableUpgradeable {
         require(block.timestamp - uint256(matchData.lastTimestamp) > matchData.matchConfig.timeSubmitMatchResult, "GB: 2 not timeout yet");
         if (matchData.matchState == MatchState.SUMMITING_RESULT) {
             MatchState matchResult = MatchState.REJECT_TO_JOIN_GAME;
+            bool isFault;
             bool isPlayer1Fault;
 
             // emit event with reason for tracking purpose
@@ -543,15 +544,17 @@ contract GameBase is OwnableUpgradeable {
                 // charge fault amount
                 if (matchData.player2SummitResult != MatchResult.REJECT) {
                     matchResult = MatchState(uint8(matchData.player2SummitResult) + uint8(MatchState.GAME_CLOSED));
+                    isFault = true;
+                    isPlayer1Fault = true;
                 }
-                isPlayer1Fault = true;
             } else {
                 if (matchData.player1SummitResult != MatchResult.REJECT) {
                     matchResult = MatchState(uint8(matchData.player1SummitResult) + uint8(MatchState.GAME_CLOSED));
+                    isFault = true;
                 }
             }
 
-            _handleResult(matchId, matchResult, Fault(true, isPlayer1Fault));
+            _handleResult(matchId, matchResult, Fault(isFault, isPlayer1Fault));
             emit MatchStateUpdate(matchId, matchResult);
 
             return;
