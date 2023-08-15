@@ -217,7 +217,7 @@ contract StakingModule is OwnableUpgradeable, ReentrancyGuard, LinkedListLib {
      * @notice Validator withdraw their staked token
      * @dev
      */
-    function updateCommitteeList() external nonReentrant {
+    function updateCommitteeList() internal {
         // only l2OutputOracle can trigger update validator list
         if (msg.sender != address(l2OutputOracle)) {
             revert OnlyL2OutputOracle();
@@ -311,8 +311,11 @@ contract StakingModule is OwnableUpgradeable, ReentrancyGuard, LinkedListLib {
         emit Unstake(staker, block.timestamp, unstakeAmount_);
     }
 
-    // todo cast vote
     // todo store amount vote at block height
+    // todo cast vote
+    function castVote() external {
+
+    }
 
     /**
      * @notice Unstaker claim staked token by trigger this function
