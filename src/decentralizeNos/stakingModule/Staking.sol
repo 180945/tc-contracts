@@ -27,6 +27,11 @@ contract StakingModule is OwnableUpgradeable, ReentrancyGuard, LinkedListLib {
         uint64 indexPending;
     }
 
+    struct VotingData {
+        mapping(address => bool) voted;
+        uint totalVote;
+    }
+
     IL2OutputOracle private l2OutputOracle;
     uint public minStakeAmount;
     // prev validator in array
@@ -39,6 +44,12 @@ contract StakingModule is OwnableUpgradeable, ReentrancyGuard, LinkedListLib {
     mapping(address => Unstaking) public unstakings;
     // unstake time
     uint public unstakingTime;
+    // total staking top N
+    uint public totalStaking;
+    // total pending for the next round
+    uint public totalStakingPending;
+    // tracking vote of state root
+    mapping(bytes32 => VotingData) public votes;
 
     // @dev event section
     event UpdateNumbOfValidator(uint value);
@@ -70,6 +81,8 @@ contract StakingModule is OwnableUpgradeable, ReentrancyGuard, LinkedListLib {
     error MustWithdrawToZeroOrLeftAmountGreaterThanMin();
     error ValidatorsMustNotEmpty();
     error StakerIsInTopOrNotHaveStakeYet();
+    error InvalidNextRoot();
+    error StakerVotedOrNotInTop();
 
     function initialize(
         uint256 minStakeAmount_,
@@ -118,6 +131,10 @@ contract StakingModule is OwnableUpgradeable, ReentrancyGuard, LinkedListLib {
         if (totalStaked != msg.value) {
             revert StakeAmountNotEqualMsgValue();
         }
+
+        // store top N staked
+        totalStaking = totalStaked;
+        totalStakingPending = totalStaked;
 
         // the total staked in data must equal to the msg.value
         __Ownable_init();
@@ -184,8 +201,15 @@ contract StakingModule is OwnableUpgradeable, ReentrancyGuard, LinkedListLib {
                 ) {
                     revert FailedLogic();
                 }
+
+                // update total staking amount
+                totalStakingPending -= removedAmount;
+                totalStakingPending += stakeAmount;
             }
+        } else {
+            totalStakingPending += stakeAmount;
         }
+
 
         emit Stake(staker, stakeAmount);
     }
@@ -257,7 +281,7 @@ contract StakingModule is OwnableUpgradeable, ReentrancyGuard, LinkedListLib {
             revert ValidatorsMustNotEmpty();
         }
 
-        for (var i = 0; i < stakers_.length; i++) {
+        for (uint i = 0; i < stakers_.length; i++) {
             // verify staker not in the top list
             if (getIdByAddress(stakers_[i]) != 0 || validatorNotInLeaderBoard[stakers_[i]].amount == 0) {
                 revert StakerIsInTopOrNotHaveStakeYet();
@@ -295,6 +319,7 @@ contract StakingModule is OwnableUpgradeable, ReentrancyGuard, LinkedListLib {
             // remove node from list board
             removeNode(getIdByAddress(staker));
             if (leftAmount > 0) {
+                totalStakingPending -= unstakeAmount_;
                 handleStakeRequest(staker, leftAmount);
             }
         } else {
@@ -308,10 +333,47 @@ contract StakingModule is OwnableUpgradeable, ReentrancyGuard, LinkedListLib {
         emit Unstake(staker, block.timestamp, unstakeAmount_);
     }
 
-    // todo store amount vote at block height
-    // todo cast vote
-    function castVote() external {
+    function castVote(
+        bytes32 _l2Output,
+        uint256 _l2BlockNumber,
+        bytes32 _l1Blockhash,
+        uint256 _l1BlockNumber
+    ) external {
+        if (_l2BlockNumber != l2OutputOracle.nextBlockNumber()) {
+            revert InvalidNextRoot();
+        }
+        bytes32 key = keccak256(abi.encode(_l2Output, _l2BlockNumber, _l1Blockhash, _l1BlockNumber));
 
+        if (votes[key].voted[msg.sender] || isCurrentValidator(msg.sender)) {
+            revert StakerVotedOrNotInTop();
+        }
+
+        uint voteAmount;
+        if (validatorNotInLeaderBoard[msg.sender].isCurrentValidator) {
+            voteAmount = validatorNotInLeaderBoard[msg.sender].amount;
+        } else {
+            voteAmount = getNodeByAddress(msg.sender).amount;
+        }
+
+        votes[key].totalVote += voteAmount;
+        votes[key].voted[msg.sender] = true;
+
+        // check vote reach 2/3 then new committee list
+        if (votes[key].totalVote >= (2 * totalStaking / 3)) {
+            // submit root state to l2oracle output
+            l2OutputOracle.proposeL2Output(
+                _l2Output,
+                _l2BlockNumber,
+                _l1Blockhash,
+                _l1BlockNumber
+            );
+
+            // update new committee list
+            updateCommitteeList();
+
+            // update total staking amount
+            totalStaking = totalStakingPending;
+        }
     }
 
     /**
@@ -374,16 +436,17 @@ contract StakingModule is OwnableUpgradeable, ReentrancyGuard, LinkedListLib {
     // @dev getter functions
 
     /**
-     * @dev to query and get latest and next block height
+     * @dev check the input address is current validator
      */
-    function isCurrentValidator(address validator_) external returns(bool) {
-        return true;
+    function isCurrentValidator(address validator_) public view returns(bool) {
+        return getIdByAddress(validator_) != 0 && !validatorNotInLeaderBoard[validator_].isPendingValidator ||
+            validatorNotInLeaderBoard[validator_].isCurrentValidator;
     }
 
     /**
      * @dev list validator
      */
-    function getValidators() external returns(address[] memory) {
+    function getValidators() external pure returns(address[] memory) {
         return new address[](1);
     }
 }
