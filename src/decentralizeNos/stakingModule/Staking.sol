@@ -191,7 +191,6 @@ contract StakingModule is OwnableUpgradeable, ReentrancyGuard, LinkedListLib {
     }
 
     /**
-     * @notice Calculates the exchange rate from the underlying to the CToken
      * @dev User call function to stake their fund into staking pool
      * staking amount must > Y TC tokens
      * update user will be validator at the next chunk if reach condition
@@ -249,7 +248,6 @@ contract StakingModule is OwnableUpgradeable, ReentrancyGuard, LinkedListLib {
     }
 
     /**
-     * @notice
      * @dev This will reupdate the top of list staker when some of top staker do
      * unstake and their stake amount not be in top
      * so anyone trigger this function to bring them back to the top
@@ -273,7 +271,6 @@ contract StakingModule is OwnableUpgradeable, ReentrancyGuard, LinkedListLib {
 
     /**
      * @notice Validator withdraw their staked token
-     * @dev
      */
     function unstaking(uint unstakeAmount_) payable external nonReentrant {
         if (unstakeAmount_ == 0) {
