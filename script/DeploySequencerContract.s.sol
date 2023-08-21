@@ -9,7 +9,6 @@ import "../src/bridgeTwoWays/Bridge.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../src/bridgeTwoWays/Proxy.sol";
 import "../src/decentralizeNos/SequencerList.sol";
-import "optimism-tc/packages/contracts-bedrock/contracts/L2/SequencerFeeVault.sol";
 
 contract TCScript is Script {
     address upgradeAddress;

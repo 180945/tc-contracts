@@ -3,7 +3,7 @@ pragma solidity ^0.8.17;
 
 import {OwnableUpgradeable} from "@openzeppelin-upgradeable/contracts/access/OwnableUpgradeable.sol";
 import {LinkedListLib} from "../libs/LinkedList.sol";
-import {IL2OutputOracle} from "./IL2OutputOracle.sol";
+import {IL2OutputOracle} from "../helper/IL2OutputOracle.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 contract StakingModule is OwnableUpgradeable, ReentrancyGuard, LinkedListLib {
