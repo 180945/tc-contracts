@@ -29,6 +29,9 @@ contract Sequencer is SequencersBase {
 
     constructor(IL2OutputOracle l2OutputOracle_) {
         l2OutputOracle = l2OutputOracle_;
+
+        // sanity check
+        l2OutputOracle.nextBlockNumber();
     }
 
     function initialize(
