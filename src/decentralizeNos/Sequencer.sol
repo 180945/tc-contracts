@@ -106,4 +106,9 @@ contract Sequencer is SequencersBase {
         emit NewQuorum(quorum, newQuorum_);
         quorum = newQuorum_;
     }
+
+    // @notice check sequencer is voted or not
+    function getVoted(bytes32 signData_, address sequencer_) external view returns(bool) {
+        return votes[signData_].voted[sequencer_];
+    }
 }

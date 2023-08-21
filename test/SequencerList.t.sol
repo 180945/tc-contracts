@@ -228,6 +228,8 @@ contract SequencerListTest is Test {
 
         assertEq(l2Mock.nextBlockNumber(), 30);
 
+        assertEq(sequencer.getVoted(signData, o2), false);
+
         signatures = bytes("");
         (v, r, s) = vm.sign(prv2, signData);
         signatures = abi.encodePacked(signatures, r, s, v);
@@ -235,6 +237,8 @@ contract SequencerListTest is Test {
             _l2Output, _l2BlockNumber + 10, _l1Blockhash, _l1BlockNumber,
             signatures
         );
+
+        assertEq(sequencer.getVoted(signData, o2), true);
 
         assertEq(l2Mock.nextBlockNumber(), 40);
     }
