@@ -183,5 +183,59 @@ contract SequencerListTest is Test {
         );
 
         // sign with key is not sequencer
+        signatures = bytes("");
+        (v, r, s) = vm.sign(prv3, signData);
+        signatures = abi.encodePacked(signatures, r, s, v);
+
+        vm.expectRevert(0x53e2827c);
+        sequencer.submitStateRoot(
+            _l2Output, _l2BlockNumber + 10, _l1Blockhash, _l1BlockNumber,
+            signatures
+        );
+
+        signatures = bytes("");
+        (v, r, s) = vm.sign(prv1, signData);
+        signatures = abi.encodePacked(signatures, r, s, v);
+        // submit twice
+        signatures = abi.encodePacked(signatures, r, s, v);
+        vm.expectRevert(0x3470e27f);
+        sequencer.submitStateRoot(
+            _l2Output, _l2BlockNumber + 10, _l1Blockhash, _l1BlockNumber,
+            signatures
+        );
+
+        assertEq(l2Mock.nextBlockNumber(), 30);
+
+        // update committee list
+        address[] memory sequencers2 = new address[](3);
+        sequencers2[0] = o1;
+        sequencers2[1] = o2;
+        sequencers2[2] = o3;
+
+        vm.prank(ADMIN_ADDR);
+        sequencer.newSequencers(sequencers2);
+
+        // sequencer 1 submit
+        signatures = bytes("");
+        (v, r, s) = vm.sign(prv1, signData);
+        signatures = abi.encodePacked(signatures, r, s, v);
+        sequencer.submitStateRoot(
+            _l2Output, _l2BlockNumber + 10, _l1Blockhash, _l1BlockNumber,
+            signatures
+        );
+
+        sequencer.votes(signData);
+
+        assertEq(l2Mock.nextBlockNumber(), 30);
+
+        signatures = bytes("");
+        (v, r, s) = vm.sign(prv2, signData);
+        signatures = abi.encodePacked(signatures, r, s, v);
+        sequencer.submitStateRoot(
+            _l2Output, _l2BlockNumber + 10, _l1Blockhash, _l1BlockNumber,
+            signatures
+        );
+
+        assertEq(l2Mock.nextBlockNumber(), 40);
     }
 }
