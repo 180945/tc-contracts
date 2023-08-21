@@ -24,7 +24,7 @@ contract Sequencer is SequencersBase {
     error InvalidNewQuorum();
 
     // @notice event section
-    event SubmittedVote(uint, bytes32, bytes);
+    event SubmittedVote(bytes32, bytes, uint);
     event NewQuorum(uint16, uint16);
 
     constructor(IL2OutputOracle l2OutputOracle_) {
@@ -41,7 +41,7 @@ contract Sequencer is SequencersBase {
         );
 
         // init with 2/3 quorum
-        quorum = 6666;
+        quorum = 6667;
     }
 
     // @notice cast vote and submit state root if reach quorum
@@ -83,8 +83,8 @@ contract Sequencer is SequencersBase {
             votes[signData].totalVote++;
         }
 
-        // total vote > 2/3 + 1 sequencers
-        if (votes[signData].totalVote >= (sequencers.length * quorum / 1e4 + 1)) {
+        // total vote > 2/3 sequencers
+        if (votes[signData].totalVote >= (sequencers.length * quorum / 1e4)) {
             // quorum reached then trigger update state root
             l2OutputOracle.proposeL2Output(
                 _l2Output,
@@ -94,7 +94,7 @@ contract Sequencer is SequencersBase {
             );
         }
 
-        emit SubmittedVote(signData, signatures);
+        emit SubmittedVote(signData, signatures, votes[signData].totalVote);
     }
 
     // @notice update quorum value
