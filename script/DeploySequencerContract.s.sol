@@ -14,6 +14,7 @@ import "../src/decentralizeNos/Sequencer.sol";
 contract TCScript is Script {
     address upgradeAddress;
     address admin;
+    bytes sequencerListTemp;
     function setUp() public {
         upgradeAddress = 0x9699b31b25D71BDA4819bBe66244E9130cEE62b7;
         admin = 0x1554e0c159364d7f207BfB7Ed0B7Df4c86db011C;
@@ -21,12 +22,11 @@ contract TCScript is Script {
 
     function run() public {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        sequencerListTemp = vm.envBytes("SEQUENCERS");
         vm.startBroadcast(deployerPrivateKey);
 
         // deploy vesting tc contract
-        address[] memory sequencers = new address[](1);
-        sequencers[0] = admin;
-
+        address[] memory sequencers = abi.decode(sequencerListTemp, (address[]));
         SequencerList sequenceContract = SequencerList(payable(address(new TransparentUpgradeableProxy(
             address(new SequencerList()),
             upgradeAddress,
