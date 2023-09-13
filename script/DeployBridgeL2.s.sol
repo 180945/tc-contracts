@@ -12,30 +12,17 @@ import "../src/bridgeTwoWays/Proxy.sol";
 contract TCScript is Script {
     address upgradeAddress;
     address operator;
-//    address wrappedTokenImp;
-//    address safeImp;
-//    address bridgeImp;
+    address[] owners;
     function setUp() public {
-        upgradeAddress = 0xE7143319283D0b5b234AEA046769D40bee5C6D43;
-//        wrappedTokenImp = 0x79DD392A7c352f0C47fB452c036EF08A1DA148C6;
-//        safeImp = 0x47D453f4E494Ebb7264380d98D1C61420DfBB973;
-//        bridgeImp = 0xa103f20367b18D004710141Ff505A6B63CE6885C;
-        operator = 0x01e7663F7359698E2B1da534b478b71e4b0D50e9;
+        upgradeAddress = vm.envAddress("UPGRADE_WALLET");
+        operator = vm.envAddress("OPERATOR_WALLET");
+        owners = vm.envAddress("OWNERS", ",");
     }
 
     function run() public {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
-
-        // deploy bridge tc contract
-        address[] memory owners = new address[](7);
-        owners[0] = address(0x2736d9488022C760Bad8f1FDcc156CEAF2fF3bF0);
-        owners[1] = address(0x63cA329bD5743cFB8Ee01fAb22b29A4ef00B0F97);
-        owners[2] = address(0xc78980C8a6042cc947e238053BCB3544d8726DF3);
-        owners[3] = address(0xbd3f547B7E10d0bA899873CC59FDA8c09804BBbc);
-        owners[4] = address(0xE62c762B706e1394181dCA2313cB03862737CADE);
-        owners[5] = address(0x85c7ecA3257614A6389fDb58ab0a89563f107B14);
-        owners[6] = address(0xf4add02D3355f8ff6411018892D67Bd5dA887f51);
+        address deployer = vm.addr(deployerPrivateKey);
 
         Safe safeImp = new Safe();
         Safe safe = Safe(payable(address(new TransparentUpgradeableProxy(
@@ -44,7 +31,7 @@ contract TCScript is Script {
             abi.encodeWithSelector(
                 Safe.setup.selector,
                 owners,
-                5,
+                2 * owners.length / 3 + 1,
                 address(0x0),
                 bytes(""),
                 address(0x0),
@@ -56,7 +43,7 @@ contract TCScript is Script {
 
         address[] memory tokens = new address[](0);
 
-        // deploy tcbridge
+        // deploy TC bridge
         Bridge bridgeImp = new Bridge();
         Bridge bridge = Bridge(address(new TransparentUpgradeableProxy(
             address(bridgeImp),
@@ -64,25 +51,19 @@ contract TCScript is Script {
             abi.encodeWithSelector(
                 Bridge.initialize.selector,
                 address(safe),
-                operator,
+                deployer,
                 tokens
             )
         )));
 
-        uint tokenCount = 5;
+        uint tokenCount = 2;
         string[] memory names = new string[](tokenCount);
         names[0] = "Bitcoin";
         names[1] = "Ethereum";
-        names[2] = "USDC";
-        names[3] = "PEPE";
-        names[4] = "Tether";
 
         string[] memory symbols = new string[](tokenCount);
         symbols[0] = "BTC";
         symbols[1] = "ETH";
-        symbols[2] = "USDC";
-        symbols[3] = "PEPE";
-        symbols[4] = "USDT";
 
         address[] memory results = new address[](tokenCount);
         WrappedToken wrappedTokenImp = new WrappedToken();
@@ -99,16 +80,15 @@ contract TCScript is Script {
                 )
             ));
         }
-
         {
             bool[] memory isBurns = new bool[](tokenCount);
             isBurns[0] = true;
             isBurns[1] = true;
-            isBurns[2] = true;
-            isBurns[3] = true;
-            isBurns[4] = true;
+
             bridge.updateToken(results, isBurns);
         }
+        bridge.transferOperator(operator);
+
         vm.stopBroadcast();
 
         {
@@ -124,40 +104,27 @@ contract TCScript is Script {
 
 contract TCScriptOnETH is Script {
     address upgradeAddress;
-    address safeImp;
     address operator;
-    //    address wrappedTokenImp;
-    //    address bridgeImp;
+    address[] owners;
+
     function setUp() public {
-        upgradeAddress = 0xE7143319283D0b5b234AEA046769D40bee5C6D43;
-        safeImp = 0xd9Db270c1B5E3Bd161E8c8503c55cEABeE709552;
-        operator = 0x01e7663F7359698E2B1da534b478b71e4b0D50e9;
-        //        wrappedTokenImp = 0x79DD392A7c352f0C47fB452c036EF08A1DA148C6;
-        //        bridgeImp = 0xa103f20367b18D004710141Ff505A6B63CE6885C;
+        upgradeAddress = vm.envAddress("UPGRADE_WALLET");
+        operator = vm.envAddress("OPERATOR_WALLET");
+        owners = vm.envAddress("OWNERS", ",");
     }
 
     function run() public {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
 
-        // deploy bridge tc contract
-        address[] memory owners = new address[](7);
-        owners[0] = address(0x2736d9488022C760Bad8f1FDcc156CEAF2fF3bF0);
-        owners[1] = address(0x63cA329bD5743cFB8Ee01fAb22b29A4ef00B0F97);
-        owners[2] = address(0xc78980C8a6042cc947e238053BCB3544d8726DF3);
-        owners[3] = address(0xbd3f547B7E10d0bA899873CC59FDA8c09804BBbc);
-        owners[4] = address(0xE62c762B706e1394181dCA2313cB03862737CADE);
-        owners[5] = address(0x85c7ecA3257614A6389fDb58ab0a89563f107B14);
-        owners[6] = address(0xf4add02D3355f8ff6411018892D67Bd5dA887f51);
-
         // Safe safeImp = new Safe();
         Safe safe = Safe(payable(address(new TransparentUpgradeableProxy(
-            safeImp,
+            address(new Safe()),
             upgradeAddress,
             abi.encodeWithSelector(
                 Safe.setup.selector,
                 owners,
-                5,
+                2 * owners.length / 3 + 1,
                 address(0x0),
                 bytes(""),
                 address(0x0),
@@ -181,20 +148,20 @@ contract TCScriptOnETH is Script {
             )
         )));
 
-        // deploy proxy
-        ProxyBridge proxyBridge = new ProxyBridge(
-            0x47D453f4E494Ebb7264380d98D1C61420DfBB973,
-            0xa103f20367b18D004710141Ff505A6B63CE6885C,
-            address(safe),
-            address(bridge),
-            42213
-        );
+        //// @deprecated deploy proxy
+        //        ProxyBridge proxyBridge = new ProxyBridge(
+        //            0x47D453f4E494Ebb7264380d98D1C61420DfBB973,
+        //            0xa103f20367b18D004710141Ff505A6B63CE6885C,
+        //            address(safe),
+        //            address(bridge),
+        //            42213
+        //        );
+        // console.log("Proxy address  %s", address(proxyBridge));
 
         vm.stopBroadcast();
 
         console.log("=== Deployment addresses ===");
         console.log("Safe address %s", address(safe));
         console.log("Bridge address  %s", address(bridge));
-        console.log("Proxy address  %s", address(proxyBridge));
     }
 }
