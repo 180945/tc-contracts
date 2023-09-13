@@ -111,6 +111,7 @@ contract TCScript is Script {
             result = string.concat(result, '"');
             result = string.concat(result, vm.toString(address(bridge)));
             result = string.concat(result, '"');
+            result = string.concat(result, ",");
             for (uint i = 0; i < names.length; i++) {
                 console.log("%s address  %s", symbols[i], results[i]);
                 result = string.concat(result, '"');
@@ -120,6 +121,9 @@ contract TCScript is Script {
                 result = string.concat(result, '"');
                 result = string.concat(result, vm.toString(results[i]));
                 result = string.concat(result, '"');
+                if (i != names.length - 1) {
+                    result = string.concat(result, ',');
+                }
             }
             result = string.concat(result, "}");
             vm.writeFile("deployL2.json", result);
