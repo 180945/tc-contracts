@@ -13,10 +13,14 @@ contract TCScript is Script {
     address upgradeAddress;
     address operator;
     address[] owners;
+    string[] tokenNames;
     function setUp() public {
         upgradeAddress = vm.envAddress("UPGRADE_WALLET");
         operator = vm.envAddress("OPERATOR_WALLET");
         owners = vm.envAddress("OWNERS", ",");
+        tokenNames = vm.envString("TOKENS", ",");
+
+        require(tokenNames.length % 2 == 0, "invalid tokens param");
     }
 
     function run() public {
@@ -56,16 +60,19 @@ contract TCScript is Script {
             )
         )));
 
-        uint tokenCount = 2;
+        uint tokenCount = tokenNames.length / 2;
         string[] memory names = new string[](tokenCount);
-        names[0] = "Bitcoin";
-        names[1] = "Ethereum";
+        for (uint i = 0; i < names.length; i++) {
+            names[i] = tokenNames[i * 2];
+        }
 
         string[] memory symbols = new string[](tokenCount);
-        symbols[0] = "BTC";
-        symbols[1] = "ETH";
+        for (uint i = 0; i < symbols.length; i++) {
+            symbols[i] = tokenNames[i * 2 + 1];
+        }
 
-        address[] memory results = new address[](tokenCount);
+
+    address[] memory results = new address[](tokenCount);
         WrappedToken wrappedTokenImp = new WrappedToken();
         // deploy wrapped token
         for (uint i = 0; i < names.length; i++) {
