@@ -99,12 +99,30 @@ contract TCScript is Script {
         vm.stopBroadcast();
 
         {
+            string memory result = '{ "multisig":';
             console.log("=== Deployment addresses ===");
             console.log("Safe address %s", address(safe));
+            result = string.concat(result, '"');
+            result = string.concat(result, vm.toString(address(safe)));
+            result = string.concat(result, '"');
+            result = string.concat(result, ",");
+            result = string.concat(result, '"bridge":');
             console.log("Bridge address  %s", address(bridge));
+            result = string.concat(result, '"');
+            result = string.concat(result, vm.toString(address(bridge)));
+            result = string.concat(result, '"');
             for (uint i = 0; i < names.length; i++) {
                 console.log("%s address  %s", symbols[i], results[i]);
+                result = string.concat(result, '"');
+                result = string.concat(result, symbols[i]);
+                result = string.concat(result, '"');
+                result = string.concat(result, ':');
+                result = string.concat(result, '"');
+                result = string.concat(result, vm.toString(results[i]));
+                result = string.concat(result, '"');
             }
+            result = string.concat(result, "}");
+            vm.writeFile("deployL2.json", result);
         }
     }
 }
@@ -170,5 +188,20 @@ contract TCScriptOnETH is Script {
         console.log("=== Deployment addresses ===");
         console.log("Safe address %s", address(safe));
         console.log("Bridge address  %s", address(bridge));
+
+        string memory result = '{ "multisig":';
+        console.log("=== Deployment addresses ===");
+        console.log("Safe address %s", address(safe));
+        result = string.concat(result, '"');
+        result = string.concat(result, vm.toString(address(safe)));
+        result = string.concat(result, '"');
+        result = string.concat(result, ",");
+        result = string.concat(result, '"bridge":');
+        console.log("Bridge address  %s", address(bridge));
+        result = string.concat(result, '"');
+        result = string.concat(result, vm.toString(address(bridge)));
+        result = string.concat(result, '"');
+        result = string.concat(result, "}");
+        vm.writeFile("deployETH.json", result);
     }
 }
