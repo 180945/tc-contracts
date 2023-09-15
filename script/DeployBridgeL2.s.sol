@@ -113,7 +113,7 @@ contract TCScript is Script {
             result = string.concat(result, '"');
             result = string.concat(result, ",");
             for (uint i = 0; i < names.length; i++) {
-                console.log("%s address  %s", symbols[i], results[i]);
+                console.log("%s", results[i]);
                 result = string.concat(result, '"');
                 result = string.concat(result, symbols[i]);
                 result = string.concat(result, '"');
@@ -148,7 +148,7 @@ contract TCScriptOnETH is Script {
 
         // Safe safeImp = new Safe();
         Safe safe = Safe(payable(address(new TransparentUpgradeableProxy(
-            address(new Safe()),
+            address(0xd9Db270c1B5E3Bd161E8c8503c55cEABeE709552),
             upgradeAddress,
             abi.encodeWithSelector(
                 Safe.setup.selector,
