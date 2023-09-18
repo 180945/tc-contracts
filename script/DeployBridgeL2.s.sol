@@ -135,20 +135,25 @@ contract TCScriptOnETH is Script {
     address upgradeAddress;
     address operator;
     address[] owners;
+    bool isMainnet;
 
     function setUp() public {
         upgradeAddress = vm.envAddress("UPGRADE_WALLET");
         operator = vm.envAddress("OPERATOR_WALLET");
         owners = vm.envAddress("OWNERS", ",");
+        isMainnet = vm.envBool("MAINNET");
     }
 
     function run() public {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
 
+        address safeImp = isMainnet ? address(0xd9Db270c1B5E3Bd161E8c8503c55cEABeE709552) :
+            address(new Safe());
+
         // Safe safeImp = new Safe();
         Safe safe = Safe(payable(address(new TransparentUpgradeableProxy(
-            address(0xd9Db270c1B5E3Bd161E8c8503c55cEABeE709552),
+            safeImp,
             upgradeAddress,
             abi.encodeWithSelector(
                 Safe.setup.selector,
