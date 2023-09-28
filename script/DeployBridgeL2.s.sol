@@ -209,3 +209,20 @@ contract TCScriptOnETH is Script {
         vm.writeFile("deployETH.json", result);
     }
 }
+
+contract SetAmin is Script {
+    address upgradeAddress;
+    function setUp() public {
+        upgradeAddress = vm.envAddress("UPGRADE_WALLET");
+    }
+
+    function run() public {
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        vm.startBroadcast(deployerPrivateKey);
+
+        console.log("new upgrade address: %s", upgradeAddress);
+        ITransparentUpgradeableProxy(0x111808AbE352c8003e0eFfcc04998EaB26Cebe3c).changeAdmin(address(upgradeAddress));
+
+        vm.stopBroadcast();
+    }
+}
