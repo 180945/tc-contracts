@@ -5,20 +5,12 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@tc/NumberMath.sol";
 
-/// @notice Call multiple functions in the current contract and return the data from all of them if they all succeed
-/// @dev The `msg.value` should not be trusted for any method callable from multicall.
-/// @param previousBlockhash The expected parent blockHash
-/// @param data The encoded function data for each of the calls to make to this contract
-/// @return results The results from each of the calls passed in via data
-// function multicall(bytes32 previousBlockhash, bytes[] calldata data)
-// external
-// payable
-// returns (bytes[] memory results);
 struct ExactInputSingleParams {
     address tokenIn;
     address tokenOut;
     uint24 fee;
     address recipient;
+    uint256 deadline;
     uint256 amountIn;
     uint256 amountOutMinimum;
     uint160 sqrtPriceLimitX96;
