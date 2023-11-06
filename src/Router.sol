@@ -143,6 +143,7 @@ contract Router {
         );
 
         // buy key
+        IERC20(params.tokenOut).approve(address(keyFactory), buyPriceBAfterFeeMax);
         keyFactory.buyKeysForV2ByToken(
             address(key),
             amountA,
