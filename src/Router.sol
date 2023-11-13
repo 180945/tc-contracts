@@ -94,16 +94,23 @@ contract Router {
         // transfer key to this account
         key.safeTransferFrom(msg.sender, address(this), amount);
 
+        // balance before
+        uint tokenInBalance = IERC20(params.tokenIn).balanceOf(msg.sender);
+
         // sell key to btc
-        keyFactory.sellKeysV2ByToken(
+        keyFactory.sellKeysForV2ByToken(
             address(key),
             amount,
-            sellPriceAfterFeeMin
+            sellPriceAfterFeeMin,
+            msg.sender
         );
 
         // swap token source to dest token
-        params.amountIn = IERC20(params.tokenIn).balanceOf(address(this));
+        params.amountIn = IERC20(params.tokenIn).balanceOf(msg.sender) - tokenInBalance;
         params.recipient = msg.sender;
+
+        // transfer source token to this account
+        IERC20(params.tokenIn).safeTransferFrom(msg.sender, address(this), params.amountIn);
 
         // do swap
         IERC20(params.tokenIn).approve(address(swapRouter), params.amountIn);
