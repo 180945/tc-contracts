@@ -16,6 +16,17 @@ struct ExactInputSingleParams {
     uint160 sqrtPriceLimitX96;
 }
 
+struct ExactOutputSingleParams {
+    address tokenIn;
+    address tokenOut;
+    uint24 fee;
+    address recipient;
+    uint256 deadline;
+    uint256 amountOut;
+    uint256 amountInMaximum;
+    uint160 sqrtPriceLimitX96;
+}
+
 interface IKey {
     function getBuyPriceAfterFeeV2(
         uint256 amountX18
@@ -61,6 +72,11 @@ interface ISwapRouter2 {
     /// @param params The parameters necessary for the swap, encoded as `ExactInputSingleParams` in calldata
     /// @return amountOut The amount of the received token
     function exactInputSingle(ExactInputSingleParams calldata params) external payable returns (uint256 amountOut);
+
+    /// @notice Swaps as little as possible of one token for `amountOut` of another token
+    /// @param params The parameters necessary for the swap, encoded as `ExactOutputSingleParams` in calldata
+    /// @return amountIn The amount of the input token
+    function exactOutputSingle(ExactOutputSingleParams calldata params) external payable returns (uint256 amountIn);
 
     struct ExactInputParams {
         bytes path;
@@ -154,6 +170,38 @@ contract Router {
         uint leftBalance = IERC20(params.tokenOut).balanceOf(address(this));
         if (leftBalance > 0) {
             IERC20(params.tokenOut).safeTransfer(msg.sender, leftBalance);
+        }
+    }
+
+    // swap from token to exact key
+    // example;  Eth -> key (eth -> btc -> key)
+    function tokenToExactKey(ExactOutputSingleParams memory params, IKey key, uint keyExactAmount) external {
+        // transfer source token to this account
+        IERC20(params.tokenIn).safeTransferFrom(msg.sender, address(this), params.amountInMaximum);
+
+        // get buy price after fee v2
+        params.amountOut = key.getBuyPriceAfterFeeV2(keyExactAmount);
+
+        // set recipient to this account
+        params.recipient = address(this);
+
+        // exp: swap eth to btc
+        IERC20(params.tokenIn).approve(address(swapRouter), params.amountInMaximum);
+        swapRouter.exactOutputSingle(params);
+
+        // buy key
+        IERC20(params.tokenOut).approve(address(keyFactory), params.amountOut);
+        keyFactory.buyKeysForV2ByToken(
+            address(key),
+            keyExactAmount,
+            params.amountOut,
+            msg.sender
+        );
+
+        // transfer back to user account
+        uint leftBalance = IERC20(params.tokenIn).balanceOf(address(this));
+        if (leftBalance > 0) {
+            IERC20(params.tokenIn).safeTransfer(msg.sender, leftBalance);
         }
     }
 }
