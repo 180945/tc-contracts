@@ -254,8 +254,8 @@ contract Router {
     }
 
     function tokenToExactKeyCrossPair(ExactOutputParams memory params, IKey key, uint keyExactAmount) external {
-        (address tokenIn,,) = params.path.decodeFirstPool();
-        address tokenOut;
+        (address tokenOut,,) = params.path.decodeFirstPool();
+        address tokenIn;
         bytes memory tempPath = params.path;
         while (true) {
             bool hasMultiplePools = tempPath.hasMultiplePools();
