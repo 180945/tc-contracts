@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@tc/NumberMath.sol";
+import "@uniswap/v3-periphery/contracts/libraries/Path.sol";
 
 struct ExactInputSingleParams {
     address tokenIn;
@@ -25,6 +26,22 @@ struct ExactOutputSingleParams {
     uint256 amountOut;
     uint256 amountInMaximum;
     uint160 sqrtPriceLimitX96;
+}
+
+struct ExactInputParams {
+    bytes path;
+    address recipient;
+    uint256 deadline;
+    uint256 amountIn;
+    uint256 amountOutMinimum;
+}
+
+struct ExactOutputParams {
+    bytes path;
+    address recipient;
+    uint256 deadline;
+    uint256 amountOut;
+    uint256 amountInMaximum;
 }
 
 interface IKey {
@@ -68,6 +85,17 @@ interface IKeyFactory {
 
 // dev swap v3 interface router
 interface ISwapRouter2 {
+
+    /// @notice Swaps `amountIn` of one token for as much as possible of another along the specified path
+    /// @param params The parameters necessary for the multi-hop swap, encoded as `ExactInputParams` in calldata
+    /// @return amountOut The amount of the received token
+    function exactInput(ExactInputParams calldata params) external payable returns (uint256 amountOut);
+
+    /// @notice Swaps as little as possible of one token for `amountOut` of another along the specified path (reversed)
+    /// @param params The parameters necessary for the multi-hop swap, encoded as `ExactOutputParams` in calldata
+    /// @return amountIn The amount of the input token
+    function exactOutput(ExactOutputParams calldata params) external payable returns (uint256 amountIn);
+
     /// @notice Swaps `amountIn` of one token for as much as possible of another token
     /// @param params The parameters necessary for the swap, encoded as `ExactInputSingleParams` in calldata
     /// @return amountOut The amount of the received token
@@ -78,23 +106,13 @@ interface ISwapRouter2 {
     /// @return amountIn The amount of the input token
     function exactOutputSingle(ExactOutputSingleParams calldata params) external payable returns (uint256 amountIn);
 
-    struct ExactInputParams {
-        bytes path;
-        address recipient;
-        uint256 amountIn;
-        uint256 amountOutMinimum;
-    }
-
-    /// @notice Swaps `amountIn` of one token for as much as possible of another along the specified path
-    /// @param params The parameters necessary for the multi-hop swap, encoded as `ExactInputParams` in calldata
-    /// @return amountOut The amount of the received token
-    function exactInput(ExactInputParams calldata params) external payable returns (uint256 amountOut);
     function WETH9() external returns(address);
 }
 
 contract Router {
     using SafeERC20 for IERC20;
     using NumberMath for uint256;
+    using Path for bytes;
 
     IKeyFactory public immutable keyFactory;
     ISwapRouter2 public immutable swapRouter;
@@ -202,6 +220,80 @@ contract Router {
         uint leftBalance = IERC20(params.tokenIn).balanceOf(address(this));
         if (leftBalance > 0) {
             IERC20(params.tokenIn).safeTransfer(msg.sender, leftBalance);
+        }
+    }
+
+    // @dev swap cross pairs
+    function keyToTokenCrossPair(ExactInputParams memory params, IERC20 key, uint amount, uint sellPriceAfterFeeMin) external {
+        // transfer key to this account
+        key.safeTransferFrom(msg.sender, address(this), amount);
+
+        (address tokenIn,,) = params.path.decodeFirstPool();
+
+        // balance before
+        uint tokenInBalance = IERC20(tokenIn).balanceOf(msg.sender);
+
+        // sell key to btc
+        keyFactory.sellKeysForV2ByToken(
+            address(key),
+            amount,
+            sellPriceAfterFeeMin,
+            msg.sender
+        );
+
+        // swap token source to dest token
+        params.amountIn = IERC20(tokenIn).balanceOf(msg.sender) - tokenInBalance;
+        params.recipient = msg.sender;
+
+        // transfer source token to this account
+        IERC20(tokenIn).safeTransferFrom(msg.sender, address(this), params.amountIn);
+
+        // do swap
+        IERC20(tokenIn).approve(address(swapRouter), params.amountIn);
+        swapRouter.exactInput(params);
+    }
+
+    function tokenToExactKeyCrossPair(ExactOutputParams memory params, IKey key, uint keyExactAmount) external {
+        (address tokenIn,,) = params.path.decodeFirstPool();
+        address tokenOut;
+        bytes memory tempPath = params.path;
+        while (true) {
+            bool hasMultiplePools = tempPath.hasMultiplePools();
+            // decide whether to continue or terminate
+            if (hasMultiplePools) {
+                tempPath = tempPath.skipToken();
+            } else {
+                (,tokenOut,) = tempPath.decodeFirstPool();
+                break;
+            }
+        }
+
+        // transfer source token to this account
+        IERC20(tokenIn).safeTransferFrom(msg.sender, address(this), params.amountInMaximum);
+
+        // get buy price after fee v2
+        params.amountOut = key.getBuyPriceAfterFeeV2(keyExactAmount);
+
+        // set recipient to this account
+        params.recipient = address(this);
+
+        // exp: swap eth to btc
+        IERC20(tokenIn).approve(address(swapRouter), params.amountInMaximum);
+        swapRouter.exactOutput(params);
+
+        // buy key
+        IERC20(tokenOut).approve(address(keyFactory), params.amountOut);
+        keyFactory.buyKeysForV2ByToken(
+            address(key),
+            keyExactAmount,
+            params.amountOut,
+            msg.sender
+        );
+
+        // transfer back to user account
+        uint leftBalance = IERC20(tokenIn).balanceOf(address(this));
+        if (leftBalance > 0) {
+            IERC20(tokenIn).safeTransfer(msg.sender, leftBalance);
         }
     }
 }
