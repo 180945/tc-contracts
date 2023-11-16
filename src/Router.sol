@@ -263,7 +263,7 @@ contract Router {
             if (hasMultiplePools) {
                 tempPath = tempPath.skipToken();
             } else {
-                (,tokenOut,) = tempPath.decodeFirstPool();
+                (,tokenIn,) = tempPath.decodeFirstPool();
                 break;
             }
         }
