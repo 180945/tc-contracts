@@ -71,8 +71,7 @@ contract TCScript is Script {
             symbols[i] = tokenNames[i * 2 + 1];
         }
 
-
-    address[] memory results = new address[](tokenCount);
+        address[] memory results = new address[](tokenCount);
         WrappedToken wrappedTokenImp = new WrappedToken();
         // deploy wrapped token
         for (uint i = 0; i < names.length; i++) {
@@ -89,8 +88,9 @@ contract TCScript is Script {
         }
         {
             bool[] memory isBurns = new bool[](tokenCount);
-            isBurns[0] = true;
-            isBurns[1] = true;
+            for (uint i = 0; i < tokenCount; i++) {
+                isBurns[i] = true;
+            }
 
             bridge.updateToken(results, isBurns);
         }
