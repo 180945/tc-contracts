@@ -8,6 +8,7 @@ import "../src/WToken.sol";
 import "../src/TCBridge.sol";
 import "../src/ethereum/TCBridgeETH.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "../src/bridgeTwoWays/Bridge.sol";
 
 contract TCScript is Script {
     address upgradeAddress;
@@ -179,8 +180,8 @@ contract TCDeployTokenScript is Script {
 
     function setUp() public {
         upgradeAddress = 0xE7143319283D0b5b234AEA046769D40bee5C6D43;
-        wrappedTokenImp = 0x79DD392A7c352f0C47fB452c036EF08A1DA148C6;
-        tcBridge = 0x63bfaC4D88aeD85E0A0880E501Ed4B9E1D64A47b;
+        wrappedTokenImp = 0x7973dd1d7935637f1C392A9C33943F6CDF046252;
+        tcBridge = 0xEF51460548fB17834a389de00d5573c7C67dd388;
     }
 
     function run() public {
@@ -194,8 +195,8 @@ contract TCDeployTokenScript is Script {
             abi.encodeWithSelector(
                 WrappedToken.initialize.selector,
                 tcBridge,
-                "Wrapped PEPE",
-                "WPEPE"
+                "SATS",
+                "SATS"
             )
         )));
 
@@ -205,8 +206,8 @@ contract TCDeployTokenScript is Script {
             abi.encodeWithSelector(
                 WrappedToken.initialize.selector,
                 tcBridge,
-                "Wrapped TURBO",
-                "WTURBO"
+                "ORDI",
+                "ORDI"
             )
         )));
 

@@ -110,4 +110,7 @@ contract Bridge is OwnableUpgradeable {
 
         operator = operator_;
     }
+
+    //    for custom chain
+    //    receive() external payable {}
 }

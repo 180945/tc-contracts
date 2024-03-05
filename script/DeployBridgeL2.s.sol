@@ -49,7 +49,7 @@ contract TCScript is Script {
 
         // deploy TC bridge
         Bridge bridgeImp = new Bridge();
-        Bridge bridge = Bridge(address(new TransparentUpgradeableProxy(
+        Bridge bridge = Bridge(payable(address(new TransparentUpgradeableProxy(
             address(bridgeImp),
             upgradeAddress,
             abi.encodeWithSelector(
@@ -58,7 +58,7 @@ contract TCScript is Script {
                 deployer,
                 tokens
             )
-        )));
+        ))));
 
         uint tokenCount = tokenNames.length / 2;
         string[] memory names = new string[](tokenCount);
@@ -140,6 +140,10 @@ contract TCScriptOnETH is Script {
         upgradeAddress = vm.envAddress("UPGRADE_WALLET");
         operator = vm.envAddress("OPERATOR_WALLET");
         owners = vm.envAddress("OWNERS", ",");
+        if (owners.length == 0) {
+            owners = Safe(payable(0x5b6e24479811E7edac7A5dBbE115E5c0b5D8effB)).getOwners();
+            require(owners.length > 0);
+        }
     }
 
     function run() public {
@@ -163,10 +167,10 @@ contract TCScriptOnETH is Script {
             )
         ))));
 
-        // deploy tcbridge
+        // deploy tc_bridge
         address[] memory tokens;
         Bridge bridgeImp = new Bridge();
-        Bridge bridge = Bridge(address(new TransparentUpgradeableProxy(
+        Bridge bridge = Bridge(payable(address(new TransparentUpgradeableProxy(
             address(bridgeImp),
             upgradeAddress,
             abi.encodeWithSelector(
@@ -175,23 +179,30 @@ contract TCScriptOnETH is Script {
                 operator,
                 tokens
             )
-        )));
+        ))));
 
-        //// @deprecated deploy proxy
-        //        ProxyBridge proxyBridge = new ProxyBridge(
-        //            0x47D453f4E494Ebb7264380d98D1C61420DfBB973,
-        //            0xa103f20367b18D004710141Ff505A6B63CE6885C,
-        //            address(safe),
-        //            address(bridge),
-        //            42213
-        //        );
-        // console.log("Proxy address  %s", address(proxyBridge));
+        WrappedToken wrappedTokenImp = new WrappedToken();
+        WrappedToken bvm = WrappedToken(address(new TransparentUpgradeableProxy(
+            address(wrappedTokenImp),
+            upgradeAddress,
+            abi.encodeWithSelector(
+                WrappedToken.initialize.selector,
+                bridge,
+                "BVM",
+                "BVM"
+            )
+        )));
+        address[] memory addresses = new address[](1);
+        addresses[0] = address(bvm);
+        bool[] memory isBurns = new bool[](1);
+        isBurns[0] = true;
+
+        bridge.updateToken(addresses, isBurns);
+        require(bridge.burnableToken(address(bvm)), "failed to update tokens");
+        console.log("BVM address");
+        console.log(address(bvm));
 
         vm.stopBroadcast();
-
-        console.log("=== Deployment addresses ===");
-        console.log("Safe address %s", address(safe));
-        console.log("Bridge address  %s", address(bridge));
 
         string memory result = '{ "multisig":';
         console.log("=== Deployment addresses ===");
@@ -226,3 +237,53 @@ contract SetAmin is Script {
         vm.stopBroadcast();
     }
 }
+
+//contract TCDeployTokenScript is Script {
+//    function setUp() public {}
+//
+//    Safe safe = Safe(payable(address(new TransparentUpgradeableProxy(
+//        address(safeImp),
+//        upgradeAddress,
+//        abi.encodeWithSelector(
+//            Safe.setup.selector,
+//            owners,
+//            2 * owners.length / 3 + 1,
+//            address(0x0),
+//            bytes(""),
+//            address(0x0),
+//            address(0x0),
+//            0,
+//            address(0)
+//        )
+//    ))));
+//
+//    function run() public {
+//        address upgradeAddress = vm.envAddress("UPGRADE_WALLET");
+//        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+//        vm.startBroadcast(deployerPrivateKey);
+//        console.log(vm.addr(deployerPrivateKey));
+//
+//        address payable bridgeAddress = payable(0xca258d51A825c82d16CE54dC61B8aBC95021d17b);
+//
+//        WrappedToken wrappedTokenImp = new WrappedToken();
+//        WrappedToken bvm = WrappedToken(address(new TransparentUpgradeableProxy(
+//            address(wrappedTokenImp),
+//            upgradeAddress,
+//            abi.encodeWithSelector(
+//                WrappedToken.initialize.selector,
+//                bridgeAddress,
+//                "BVM",
+//                "BVM"
+//            )
+//        )));
+//        address[] memory addresses = new address[](1);
+//        addresses[0] = address(bvm);
+//        bool[] memory isBurns = new bool[](1);
+//        isBurns[0] = true;
+//
+//        Bridge(bridgeAddress).updateToken(addresses, isBurns);
+//        require(Bridge(bridgeAddress).burnableToken(address(bvm)), "failed to update tokens");
+//
+//        vm.stopBroadcast();
+//    }
+//}

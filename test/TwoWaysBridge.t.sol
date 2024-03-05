@@ -63,7 +63,7 @@ contract TCBridgeTest is Test {
         address[] memory tokens;
         // deploy bridge
         Bridge bridgeImp = new Bridge();
-        bridge = Bridge(address(new TransparentUpgradeableProxy(
+        bridge = Bridge(payable(address(new TransparentUpgradeableProxy(
             address(bridgeImp),
             ADMIN_ADDR,
             abi.encodeWithSelector(
@@ -72,7 +72,7 @@ contract TCBridgeTest is Test {
                 OPERATOR,
                 tokens
             )
-        )));
+        ))));
 
         assertEq(bridge.owner(), address(safe));
 

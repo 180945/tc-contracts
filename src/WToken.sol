@@ -14,10 +14,10 @@ contract WrappedToken is OwnableUpgradeable, ERC20BurnableUpgradeable, ERC20Perm
         __ERC20_init(name, symbol);
     }
 
-    function initializeERC20Permit(string memory name, uint8 version) external reinitializer(version) {
-        require(StringsUpgradeable.equal(_EIP712Name(), ""), "WrappedToken: already initialized EIP712");
-        __EIP712_init_unchained(name, StringsUpgradeable.toString(version));
-    }
+    //    function initializeERC20Permit(string memory name, uint8 version) external reinitializer(version) {
+    //        require(StringsUpgradeable.equal(_EIP712Name(), ""), "WrappedToken: already initialized EIP712");
+    //        __EIP712_init_unchained(name, StringsUpgradeable.toString(version));
+    //    }
 
     function mint(address account, uint amount) external onlyOwner {
         _mint(account, amount);
