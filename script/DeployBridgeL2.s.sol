@@ -238,52 +238,38 @@ contract SetAmin is Script {
     }
 }
 
-//contract TCDeployTokenScript is Script {
-//    function setUp() public {}
-//
-//    Safe safe = Safe(payable(address(new TransparentUpgradeableProxy(
-//        address(safeImp),
-//        upgradeAddress,
-//        abi.encodeWithSelector(
-//            Safe.setup.selector,
-//            owners,
-//            2 * owners.length / 3 + 1,
-//            address(0x0),
-//            bytes(""),
-//            address(0x0),
-//            address(0x0),
-//            0,
-//            address(0)
-//        )
-//    ))));
-//
-//    function run() public {
-//        address upgradeAddress = vm.envAddress("UPGRADE_WALLET");
-//        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-//        vm.startBroadcast(deployerPrivateKey);
-//        console.log(vm.addr(deployerPrivateKey));
-//
-//        address payable bridgeAddress = payable(0xca258d51A825c82d16CE54dC61B8aBC95021d17b);
-//
-//        WrappedToken wrappedTokenImp = new WrappedToken();
-//        WrappedToken bvm = WrappedToken(address(new TransparentUpgradeableProxy(
-//            address(wrappedTokenImp),
-//            upgradeAddress,
-//            abi.encodeWithSelector(
-//                WrappedToken.initialize.selector,
-//                bridgeAddress,
-//                "BVM",
-//                "BVM"
-//            )
-//        )));
-//        address[] memory addresses = new address[](1);
-//        addresses[0] = address(bvm);
-//        bool[] memory isBurns = new bool[](1);
-//        isBurns[0] = true;
-//
-//        Bridge(bridgeAddress).updateToken(addresses, isBurns);
-//        require(Bridge(bridgeAddress).burnableToken(address(bvm)), "failed to update tokens");
-//
-//        vm.stopBroadcast();
-//    }
-//}
+contract TCDeployTokenScript is Script {
+    function setUp() public {}
+
+    function run() public {
+        address upgradeAddress = vm.envAddress("UPGRADE_WALLET");
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        vm.startBroadcast(deployerPrivateKey);
+
+        address payable bridgeAddress = payable(0x03261a78402c139dc73346f13cd2cb301105efa3);
+
+        WrappedToken wrappedTokenImp = new WrappedToken();
+        WrappedToken bvm = WrappedToken(address(new TransparentUpgradeableProxy(
+            address(wrappedTokenImp),
+            upgradeAddress,
+            abi.encodeWithSelector(
+                WrappedToken.initialize.selector,
+                bridgeAddress,
+                "BVM",
+                "BVM"
+            )
+        )));
+        address[] memory addresses = new address[](1);
+        addresses[0] = address(bvm);
+        bool[] memory isBurns = new bool[](1);
+        isBurns[0] = true;
+
+        Bridge(bridgeAddress).updateToken(addresses, isBurns);
+        require(Bridge(bridgeAddress).burnableToken(address(bvm)), "failed to update tokens");
+
+        console.log("BVM address");
+        console.log(address(bvm));
+
+        vm.stopBroadcast();
+    }
+}
