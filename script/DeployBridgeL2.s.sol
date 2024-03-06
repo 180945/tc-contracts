@@ -246,7 +246,7 @@ contract TCDeployTokenScript is Script {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
 
-        address payable bridgeAddress = payable(0x03261a78402c139dc73346f13cd2cb301105efa3);
+        address payable bridgeAddress = payable(0x03261A78402c139dc73346F13Cd2CB301105EFa3);
 
         WrappedToken wrappedTokenImp = new WrappedToken();
         WrappedToken bvm = WrappedToken(address(new TransparentUpgradeableProxy(
