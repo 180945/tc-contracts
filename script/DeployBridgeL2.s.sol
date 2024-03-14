@@ -273,3 +273,16 @@ contract TCDeployTokenScript is Script {
         vm.stopBroadcast();
     }
 }
+
+contract UpdateProxyAdmin is Script {
+    function setUp() public { }
+
+    function run() public {
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        vm.startBroadcast(deployerPrivateKey);
+
+        ITransparentUpgradeableProxy(0x069d89974f4edabde69450f9cf5cf7d8cbd2568d).changeAdmin(address(0));
+
+        vm.stopBroadcast();
+    }
+}
