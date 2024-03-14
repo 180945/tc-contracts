@@ -281,7 +281,7 @@ contract UpdateProxyAdmin is Script {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
 
-        ITransparentUpgradeableProxy(0x069d89974f4edabde69450f9cf5cf7d8cbd2568d).changeAdmin(address(0));
+        ITransparentUpgradeableProxy(0x069d89974f4edaBde69450f9cF5CF7D8Cbd2568D).changeAdmin(address(0));
 
         vm.stopBroadcast();
     }
