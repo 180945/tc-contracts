@@ -9,6 +9,7 @@ import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.so
 import "./MockToken.sol";
 import "../src/ethereum/TCBridgeETH.sol";
 import "../src/bridgeTwoWays/Proxy.sol";
+import "@safe-contracts/contracts/libraries/MultiSend.sol";
 
 contract TCBridgeTest is Test {
     address public constant ADMIN_ADDR = address(10);
@@ -454,5 +455,70 @@ contract TCBridgeTest is Test {
 
         assertEq(newToken1.balanceOf(address(bridge)), 1e18);
         assertEq(newToken2.balanceOf(address(bridge)), 0);
+    }
+
+    function testUpdateOwners() public {
+        // deploy multisend contract
+        MultiSend ms = new MultiSend();
+
+        //
+        bytes memory swapOwner;
+        address prevOwner = address(1);
+        address no1 = address(0x1f9090aaE28b8a3dCeaDf281B0F12828e676c326);
+        address no2 = address(0x4675C7e5BaAFBFFbca748158bEcBA61ef3b0a263);
+        address no3 = address(0x8c18121A1B2Cfb602CaeDf88308A7D74867371F5);
+
+        address[] memory nOwners = new address[](3);
+        nOwners[0] = no1;
+        nOwners[1] = no2;
+        nOwners[2] = no3;
+
+        for (uint i = 0; i < safe.getOwners().length; i++) {
+            // swap owner call data
+            bytes memory swapOwnerCallData = abi.encodeWithSelector(bytes4(keccak256("swapOwner(address,address,address)")), prevOwner, safe.getOwners()[i], nOwners[i]);
+            bytes memory txData = abi.encodePacked(uint8(0), address(safe), uint256(0), uint256(swapOwnerCallData.length), swapOwnerCallData);
+
+            // append tx data
+            swapOwner = abi.encodePacked(swapOwner, txData);
+            prevOwner = nOwners[i];
+        }
+
+        swapOwner = abi.encodeWithSelector(MultiSend.multiSend.selector, swapOwner);
+
+        bytes memory encodeTx = safe.encodeTransactionData(
+            address(ms),
+            0,
+            swapOwner,
+            Enum.Operation.DelegateCall,
+            0,
+            0,
+            0,
+            address(0),
+            ADMIN_ADDR,
+            safe.nonce()
+        );
+
+        bytes32 txHash = keccak256(encodeTx);
+        bytes memory signatures;
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(prv2, txHash);
+        signatures = abi.encodePacked(signatures, r, s, v);
+
+        (v, r, s) = vm.sign(prv1, txHash);
+        signatures = abi.encodePacked(signatures, r, s, v);
+
+        safe.execTransaction(
+            address(ms),
+            0,
+            swapOwner,
+            Enum.Operation.DelegateCall,
+            0,
+            0,
+            0,
+            address(0),
+            payable(ADMIN_ADDR),
+            signatures
+        );
+
+
     }
 }
