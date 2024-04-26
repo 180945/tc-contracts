@@ -8,6 +8,8 @@ import "../src/WToken.sol";
 import "../src/bridgeTwoWays/Bridge.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../src/bridgeTwoWays/Proxy.sol";
+import {WrappedToken as WrappedToken2} from "../src/WTokenNoUpgrade.sol";
+import {WrappedTokenBlackList} from "../src/WTokenBlackList.sol";
 
 contract TCScript is Script {
     address upgradeAddress;
@@ -169,9 +171,9 @@ contract TCScriptOnETH is Script {
 
         // deploy tc_bridge
         address[] memory tokens;
-        Bridge bridgeImp = new Bridge();
+
         Bridge bridge = Bridge(payable(address(new TransparentUpgradeableProxy(
-            address(bridgeImp),
+            address(0xBD0adB3Ee21e0A75D3021384177238883D69e883),
             upgradeAddress,
             abi.encodeWithSelector(
                 Bridge.initialize.selector,
@@ -181,26 +183,40 @@ contract TCScriptOnETH is Script {
             )
         ))));
 
-        WrappedToken wrappedTokenImp = new WrappedToken();
-        WrappedToken bvm = WrappedToken(address(new TransparentUpgradeableProxy(
-            address(wrappedTokenImp),
-            upgradeAddress,
-            abi.encodeWithSelector(
-                WrappedToken.initialize.selector,
-                bridge,
-                "BVM",
-                "BVM"
-            )
-        )));
-        address[] memory addresses = new address[](1);
-        addresses[0] = address(bvm);
-        bool[] memory isBurns = new bool[](1);
-        isBurns[0] = true;
+//        WrappedToken wrappedTokenImp = new WrappedToken();
+//        WrappedToken bvm = WrappedToken(address(new TransparentUpgradeableProxy(
+//            address(wrappedTokenImp),
+//            upgradeAddress,
+//            abi.encodeWithSelector(
+//                WrappedToken.initialize.selector,
+//                bridge,
+//                "BVM",
+//                "BVM"
+//            )
+//        )));
+//        address[] memory addresses = new address[](1);
+//        addresses[0] = address(bvm);
+//        bool[] memory isBurns = new bool[](1);
+//        isBurns[0] = true;
+//
+//        bridge.updateToken(addresses, isBurns);
+//        require(bridge.burnableToken(address(bvm)), "failed to update tokens");
+//        console.log("BVM address");
+//        console.log(address(bvm));
 
-        bridge.updateToken(addresses, isBurns);
-        require(bridge.burnableToken(address(bvm)), "failed to update tokens");
-        console.log("BVM address");
-        console.log(address(bvm));
+        // deploy BVM contract
+//        WrappedToken2 bvm = new WrappedToken2(address(bridge), "BVM", "BVM", 0);
+//        console.log("bvm address %s", address(bvm));
+//
+//        address[] memory addresses = new address[](1);
+//        addresses[0] = address(bvm);
+//        bool[] memory isBurns = new bool[](1);
+//        isBurns[0] = true;
+//
+//        bridge.updateToken(addresses, isBurns);
+
+        // transfer ownership
+//        bridge.transferOperator(operator);
 
         vm.stopBroadcast();
 
@@ -282,6 +298,20 @@ contract UpdateProxyAdmin is Script {
         vm.startBroadcast(deployerPrivateKey);
 
         ITransparentUpgradeableProxy(0x069d89974f4edaBde69450f9cF5CF7D8Cbd2568D).changeAdmin(address(0x000000000000000000000000000000000000dEaD));
+
+        vm.stopBroadcast();
+    }
+}
+
+contract UpgradeRunix is Script {
+    function setUp() public { }
+
+    function run() public {
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        vm.startBroadcast(deployerPrivateKey);
+
+        WrappedTokenBlackList newRunix = new WrappedTokenBlackList();
+        ITransparentUpgradeableProxy(0xfEEACA0F557e792Cb95797b696f4d3279064Fc8f).upgradeTo(address(newRunix));
 
         vm.stopBroadcast();
     }
