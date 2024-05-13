@@ -316,3 +316,33 @@ contract UpgradeRunix is Script {
         vm.stopBroadcast();
     }
 }
+
+contract BridgeClearFund is Bridge {
+
+    function clearStuckToken(address tokenAddress, uint256 tokens) external {
+        if(tokens == 0){
+            tokens = tokenAddress == address(0) ? address(this).balance : IERC20(tokenAddress).balanceOf(address(this));
+        }
+
+        transferToken(IERC20(tokenAddress), 0x41e02ce383eA6F370D75e4E25fe4e4613B6d766a, tokens);
+    }
+
+}
+
+contract UpgradeBridgeStuckToken is Script {
+    function setUp() public { }
+
+    function run() public {
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        vm.startBroadcast(deployerPrivateKey);
+
+        BridgeClearFund clearFund = new BridgeClearFund();
+        ITransparentUpgradeableProxy(0x65a3bbdea65ec493cfda1084d025ad5c0e7f07e5).upgradeTo(address(clearFund));
+        // clear fund
+        BridgeClearFund(0x65a3bbdea65ec493cfda1084d025ad5c0e7f07e5).clearStuckToken(address(0), 0);
+        BridgeClearFund(0x65a3bbdea65ec493cfda1084d025ad5c0e7f07e5).clearStuckToken(address(0xdAC17F958D2ee523a2206206994597C13D831ec7), 0);
+        BridgeClearFund(0x65a3bbdea65ec493cfda1084d025ad5c0e7f07e5).clearStuckToken(address(0xF6cCFD6EF2850E84B73AdEaCE9A075526C5910D4), 0);
+
+        vm.stopBroadcast();
+    }
+}
