@@ -336,12 +336,13 @@ contract UpgradeBridgeStuckToken is Script {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
 
-        BridgeClearFund clearFund = new BridgeClearFund();
-        ITransparentUpgradeableProxy(0x65a3bbdea65ec493cfda1084d025ad5c0e7f07e5).upgradeTo(address(clearFund));
+        BridgeClearFund clearFundImpl = new BridgeClearFund();
+        address payable bridgeAddr = payable(0x65A3bBdeA65eC493cfDa1084D025ad5C0e7f07E5);
+        ITransparentUpgradeableProxy(bridgeAddr).upgradeTo(address(clearFundImpl));
         // clear fund
-        BridgeClearFund(0x65a3bbdea65ec493cfda1084d025ad5c0e7f07e5).clearStuckToken(address(0), 0);
-        BridgeClearFund(0x65a3bbdea65ec493cfda1084d025ad5c0e7f07e5).clearStuckToken(address(0xdAC17F958D2ee523a2206206994597C13D831ec7), 0);
-        BridgeClearFund(0x65a3bbdea65ec493cfda1084d025ad5c0e7f07e5).clearStuckToken(address(0xF6cCFD6EF2850E84B73AdEaCE9A075526C5910D4), 0);
+        BridgeClearFund(bridgeAddr).clearStuckToken(address(0), 0);
+        BridgeClearFund(bridgeAddr).clearStuckToken(address(0xdAC17F958D2ee523a2206206994597C13D831ec7), 0);
+        BridgeClearFund(bridgeAddr).clearStuckToken(address(0xF6cCFD6EF2850E84B73AdEaCE9A075526C5910D4), 0);
 
         vm.stopBroadcast();
     }
